@@ -34,6 +34,8 @@ export class DemoListingProvider implements AuctionListingProvider {
   async fetchListing(
     _input: ListingFetchInput,
   ): Promise<NormalizedAuctionListing> {
+    void _input;
+    
     return {
       title: 'Maison Aurelia Marais leather satchel',
       description: 'Fictional demo listing with light corner wear.',
@@ -56,6 +58,8 @@ export class EbthPermittedFetchProvider implements AuctionListingProvider {
   async fetchListing(
     _input: ListingFetchInput,
   ): Promise<NormalizedAuctionListing> {
+    void _input;
+    
     throw new Error(
       'We could not retrieve this listing automatically. Upload screenshots or enter the details manually.',
     );
