@@ -18,6 +18,7 @@ export interface ComparableSearchProvider {
 }
 export class ManualComparableProvider implements ComparableSearchProvider {
   async search(_query: ComparableSearchQuery): Promise<ComparableResult[]> {
+    void _query;
     return [];
   }
 }
