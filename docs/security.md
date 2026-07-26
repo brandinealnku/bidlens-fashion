@@ -1,0 +1,3 @@
+# Security
+
+All writes must resolve a server-side user and filter by owner. The schema supports per-user isolation; hosted Postgres deployments should add RLS policies keyed to the authenticated subject. URL ingestion permits only HTTPS EBTH hosts, rejects IP literals/private DNS results, and external adapters use fixed API origins. Uploads enforce MIME, size, sanitized names and local ownership. CSP, referrer, permissions, and MIME-sniffing headers are set. Provider keys are server-only and audit records contain action metadata—not credentials or tokens. Production storage should use signed URLs and malware/metadata processing.

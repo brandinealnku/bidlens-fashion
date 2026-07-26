@@ -1,0 +1,10 @@
+node_modules
+.next
+.env
+*.db
+*.db-journal
+playwright-report
+test-results
+coverage
+
+.data/

@@ -1,0 +1,391 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url = env("DATABASE_URL")
+}
+
+model UserProfile {
+  id String @id @default(cuid())
+  email String @unique
+  displayName String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  settings UserSettings?
+  listings AuctionListing[]
+  comparables Comparable[]
+  watchlist WatchlistItem[]
+  outcomes AuctionOutcome[]
+  resales ResaleOutcome[]
+  alerts Alert[]
+}
+
+model UserSettings {
+  id String @id @default(cuid())
+  userId String @unique
+  user UserProfile @relation(fields:[userId],references:[id],onDelete:Cascade)
+  preferredCurrency String @default("USD")
+  defaultTaxRate Int @default(750)
+  defaultBuyerPremiumPercent Int @default(1800)
+  defaultSellingFeePercent Int @default(1300)
+  defaultPaymentFeePercent Int @default(300)
+  defaultOutboundShipping Int @default(1800)
+  defaultPackagingCost Int @default(300)
+  defaultCleaningAllowance Int @default(2000)
+  defaultRepairAllowance Int @default(0)
+  defaultAuthenticationAllowance Int @default(3500)
+  defaultReturnRiskPercent Int @default(500)
+  minimumRequiredProfit Int @default(10000)
+  minimumRequiredROI Int @default(3000)
+  buyThresholdScore Int @default(72)
+  reviewThresholdScore Int @default(45)
+  preferredMarketplaces String @default("[\"eBay\"]")
+  timezone String @default("America/New_York")
+  demoMode Boolean @default(true)
+  updatedAt DateTime @updatedAt
+}
+
+model AuctionListing {
+  id String @id @default(cuid())
+  userId String
+  user UserProfile @relation(fields:[userId],references:[id],onDelete:Cascade)
+  sourcePlatform String @default("EBTH")
+  sourceUrl String?
+  sourceListingId String?
+  title String
+  description String @default("")
+  category String
+  originalCategory String?
+  currentBid Int
+  currency String @default("USD")
+  buyerPremiumType String @default("PERCENT")
+  buyerPremiumValue Int
+  taxRate Int
+  inboundShippingCost Int @default(0)
+  pickupCost Int @default(0)
+  auctionEndAt DateTime?
+  bidCount Int?
+  locationText String?
+  conditionText String?
+  ingestionMethod String
+  ingestionStatus String
+  lastRefreshedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  images ListingImage[]
+  analyses ProductAnalysis[]
+  comparables Comparable[]
+  valuations Valuation[]
+  recommendations BidRecommendation[]
+  watchlist WatchlistItem?
+  outcomes AuctionOutcome[]
+  resales ResaleOutcome[]
+  alerts Alert[]
+  assumptions ListingFinancialAssumptions?
+  @@index([userId,auctionEndAt])
+}
+
+model ListingImage {
+  id String @id @default(cuid())
+  auctionListingId String
+  listing AuctionListing @relation(fields:[auctionListingId],references:[id],onDelete:Cascade)
+  storagePath String
+  originalUrl String?
+  displayOrder Int
+  imageType String
+  isPrimary Boolean @default(false)
+  width Int?
+  height Int?
+  createdAt DateTime @default(now())
+  @@index([auctionListingId,displayOrder])
+}
+
+model ProductAnalysis {
+  id String @id @default(cuid())
+  auctionListingId String
+  listing AuctionListing @relation(fields:[auctionListingId],references:[id],onDelete:Cascade)
+  provider String
+  providerModel String
+  status String
+  rawStructuredResult String
+  category String
+  brand String?
+  suspectedModel String?
+  productLine String?
+  styleNumber String?
+  serialOrDateCode String?
+  color String
+  material String
+  size String?
+  dimensions String?
+  estimatedEra String?
+  genderMarket String?
+  conditionGrade String
+  identificationConfidence Float
+  authenticityRiskLevel String
+  authenticityConfidence Float?
+  visibleDamage String
+  includedItems String
+  evidence String
+  conflictingEvidence String
+  searchQueries String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  candidates ProductCandidate[]
+  @@index([auctionListingId,createdAt])
+}
+
+model ProductCandidate {
+  id String @id @default(cuid())
+  productAnalysisId String
+  analysis ProductAnalysis @relation(fields:[productAnalysisId],references:[id],onDelete:Cascade)
+  rank Int
+  brand String?
+  model String?
+  productLine String?
+  category String
+  color String
+  material String
+  size String?
+  estimatedEra String?
+  confidence Float
+  evidence String
+  conflictingEvidence String
+  searchQueries String
+  isSelected Boolean @default(false)
+  createdAt DateTime @default(now())
+  @@unique([productAnalysisId,rank])
+}
+
+model Comparable {
+  id String @id @default(cuid())
+  userId String
+  user UserProfile @relation(fields:[userId],references:[id],onDelete:Cascade)
+  auctionListingId String
+  listing AuctionListing @relation(fields:[auctionListingId],references:[id],onDelete:Cascade)
+  provider String
+  externalId String?
+  sourceUrl String?
+  title String
+  imageUrl String?
+  marketplace String
+  comparableStatus String
+  price Int
+  shippingPrice Int
+  currency String
+  totalPrice Int
+  condition String?
+  size String?
+  color String?
+  material String?
+  includedItems String?
+  soldOrListedAt DateTime?
+  similarityScore Int
+  dataQualityScore Int
+  userIncluded Boolean @default(true)
+  exclusionReason String?
+  userNotes String?
+  rawSourceData String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([userId,auctionListingId])
+  @@unique([provider,externalId])
+}
+
+model Valuation {
+  id String @id @default(cuid())
+  auctionListingId String
+  listing AuctionListing @relation(fields:[auctionListingId],references:[id],onDelete:Cascade)
+  methodVersion String
+  quickSaleEstimate Int
+  expectedResaleValue Int
+  optimisticResaleValue Int
+  lowEstimate Int
+  highEstimate Int
+  valuationConfidence Int
+  comparableCount Int
+  verifiedSoldComparableCount Int
+  activeComparableCount Int
+  rationale String
+  calculatedAt DateTime @default(now())
+  recommendations BidRecommendation[]
+  @@index([auctionListingId,calculatedAt])
+}
+
+model BidRecommendation {
+  id String @id @default(cuid())
+  auctionListingId String
+  listing AuctionListing @relation(fields:[auctionListingId],references:[id],onDelete:Cascade)
+  valuationId String
+  valuation Valuation @relation(fields:[valuationId],references:[id],onDelete:Cascade)
+  currentHammerBid Int
+  buyerPremiumAmount Int
+  salesTaxAmount Int
+  inboundShipping Int
+  pickupCost Int
+  authenticationAllowance Int
+  cleaningAllowance Int
+  repairAllowance Int
+  otherAcquisitionCosts Int
+  expectedResaleValue Int
+  sellingFees Int
+  paymentFees Int
+  outboundShipping Int
+  packagingCost Int
+  returnRiskReserve Int
+  otherSellingCosts Int
+  minimumRequiredProfit Int
+  maximumAllInAcquisitionCost Int
+  maximumRecommendedHammerBid Int
+  expectedNetProfitAtCurrentBid Int
+  expectedROIAtCurrentBid Int?
+  opportunityScore Int
+  recommendation String
+  warnings String
+  calculatedAt DateTime @default(now())
+  @@index([auctionListingId,calculatedAt])
+}
+
+model WatchlistItem {
+  id String @id @default(cuid())
+  userId String
+  user UserProfile @relation(fields:[userId],references:[id],onDelete:Cascade)
+  auctionListingId String @unique
+  listing AuctionListing @relation(fields:[auctionListingId],references:[id],onDelete:Cascade)
+  status String @default("ACTIVE")
+  alertEnabled Boolean @default(true)
+  userMaximumBid Int?
+  notes String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([userId,status])
+}
+
+model AuctionOutcome {
+  id String @id @default(cuid())
+  userId String
+  user UserProfile @relation(fields:[userId],references:[id],onDelete:Cascade)
+  auctionListingId String
+  listing AuctionListing @relation(fields:[auctionListingId],references:[id],onDelete:Cascade)
+  outcome String
+  finalHammerPrice Int?
+  finalBuyerPremium Int?
+  finalTax Int?
+  finalInboundShipping Int?
+  finalPickupCost Int?
+  authenticationCost Int?
+  cleaningCost Int?
+  repairCost Int?
+  otherCost Int?
+  acquiredAt DateTime?
+  notes String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([userId,auctionListingId])
+}
+
+model ResaleOutcome {
+  id String @id @default(cuid())
+  userId String
+  user UserProfile @relation(fields:[userId],references:[id],onDelete:Cascade)
+  auctionListingId String
+  listing AuctionListing @relation(fields:[auctionListingId],references:[id],onDelete:Cascade)
+  marketplace String
+  listedAt DateTime?
+  soldAt DateTime?
+  listingPrice Int?
+  salePrice Int?
+  marketplaceFees Int?
+  paymentFees Int?
+  promotionalFees Int?
+  shippingChargedToBuyer Int?
+  outboundShippingCost Int?
+  packagingCost Int?
+  refundAmount Int?
+  otherCosts Int?
+  returned Boolean @default(false)
+  netRealizedProfit Int?
+  realizedROI Int?
+  daysToSell Int?
+  predictionErrorAmount Int?
+  predictionErrorPercent Int?
+  notes String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([userId,soldAt])
+}
+
+model Alert {
+  id String @id @default(cuid())
+  userId String
+  user UserProfile @relation(fields:[userId],references:[id],onDelete:Cascade)
+  auctionListingId String
+  listing AuctionListing @relation(fields:[auctionListingId],references:[id],onDelete:Cascade)
+  alertType String
+  thresholdValue Int?
+  message String
+  status String @default("UNREAD")
+  triggeredAt DateTime?
+  readAt DateTime?
+  createdAt DateTime @default(now())
+  @@index([userId,status])
+}
+
+model AuditLog {
+  id String @id @default(cuid())
+  userId String
+  action String
+  entityType String
+  entityId String?
+  metadata String?
+  createdAt DateTime @default(now())
+  @@index([userId,createdAt])
+}
+
+model ProviderCache {
+  id String @id @default(cuid())
+  cacheKey String @unique
+  provider String
+  payload String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  @@index([expiresAt])
+}
+
+model Job {
+  id String @id @default(cuid())
+  userId String
+  type String
+  status String @default("QUEUED")
+  payload String
+  error String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([userId,status])
+}
+
+model ListingFinancialAssumptions {
+  id String @id @default(cuid())
+  auctionListingId String @unique
+  listing AuctionListing @relation(fields:[auctionListingId], references:[id], onDelete:Cascade)
+  taxHammer Boolean @default(true)
+  taxPremium Boolean @default(true)
+  authentication Int @default(0)
+  cleaning Int @default(0)
+  repair Int @default(0)
+  otherAcquisition Int @default(0)
+  sellingFeeBps Int @default(1300)
+  paymentFeeBps Int @default(300)
+  promotional Int @default(0)
+  outbound Int @default(0)
+  packaging Int @default(0)
+  returnRiskBps Int @default(500)
+  otherSelling Int @default(0)
+  minimumProfit Int @default(10000)
+  minimumRoiBps Int @default(3000)
+  bidIncrement Int @default(500)
+  notes String?
+  updatedAt DateTime @updatedAt
+}
