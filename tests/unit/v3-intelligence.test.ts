@@ -31,14 +31,22 @@ describe('V3 decision intelligence', () => {
   it('calculates signed bid headroom in cents', () =>
     expect(bidHeadroomCents(24500, 20000)).toBe(4500));
   it('keeps market scoring independent and personalizes preferred brands', () => {
-    const favored = scoreOpportunity(opportunity, profile);
+    const comparisonOpportunity = {
+      ...opportunity,
+      confidenceBasisPoints: 6500,
+      comparableCount: 2,
+    };
+    const favored = scoreOpportunity(comparisonOpportunity, profile);
     const neutral = scoreOpportunity(
-      { ...opportunity, brand: 'Other' },
+      { ...comparisonOpportunity, brand: 'Other' },
       profile,
     );
     expect(favored.marketScore).toBe(neutral.marketScore);
     expect(favored.personalScore).toBeGreaterThan(neutral.personalScore);
-    expect(favored.positiveFactors.length).toBeGreaterThan(0);
+    expect(favored.positiveFactors).toContain(
+      'The brand matches your preferred brands.',
+    );
+    expect(favored.personalScore).toBeLessThanOrEqual(100);
   });
   it('applies risk and excluded-brand penalties', () =>
     expect(

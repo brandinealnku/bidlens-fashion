@@ -81,7 +81,10 @@ export function scoreOpportunity(item: Opportunity, profile: Profile) {
       'The item exceeds your maximum purchase-price preference.',
     );
   }
-  if (includes(profile.preferredBrands, item.brand)) personalScore += 8;
+  if (includes(profile.preferredBrands, item.brand)) {
+    personalScore += 8;
+    positiveFactors.push('The brand matches your preferred brands.');
+  }
   if (includes(profile.preferredCategories, item.category)) personalScore += 6;
   if (includes(profile.excludedBrands, item.brand)) {
     personalScore -= 50;
