@@ -30,6 +30,14 @@ select,
 textarea {
   font: inherit;
 }
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+a:focus-visible {
+  outline: 3px solid #d18a00;
+  outline-offset: 2px;
+}
 .shell {
   display: grid;
   grid-template-columns: 240px 1fr;
@@ -207,6 +215,45 @@ textarea {
   margin-top: 30px;
   font-size: 12px;
   color: var(--muted);
+}
+.filters {
+  display: flex;
+  gap: 8px;
+  overflow: auto;
+  margin: 18px 0 24px;
+}
+.table-wrap {
+  overflow-x: auto;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+th,
+td {
+  padding: 13px;
+  border-top: 1px solid var(--line);
+  vertical-align: top;
+}
+th {
+  font-size: 12px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+td small {
+  display: block;
+  color: var(--muted);
+  margin-top: 4px;
+  max-width: 300px;
+}
+.positive {
+  color: var(--green);
+  font-weight: 700;
+}
+.negative {
+  color: var(--red);
+  font-weight: 700;
 }
 @media (max-width: 850px) {
   .shell {

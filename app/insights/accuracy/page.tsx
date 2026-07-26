@@ -1,0 +1,70 @@
+import { db } from '@/lib/db/client';
+import { requireCurrentUser } from '@/lib/auth/current-user';
+import { accuracyMetrics } from '@/lib/v3/intelligence';
+import { usd } from '@/lib/demo';
+export const dynamic = 'force-dynamic';
+export default async function AccuracyPage() {
+  const user = await requireCurrentUser();
+  const rows = await db.resaleOutcome.findMany({
+    where: { userId: user.id, soldAt: { not: null }, salePrice: { not: null } },
+    include: {
+      listing: {
+        include: {
+          recommendations: { orderBy: { calculatedAt: 'desc' }, take: 1 },
+          outcomes: { orderBy: { createdAt: 'desc' }, take: 1 },
+        },
+      },
+    },
+  });
+  const data = rows.map((x) => {
+    const rec = x.listing.recommendations[0],
+      out = x.listing.outcomes[0];
+    return {
+      predictedCents: rec?.expectedResaleValue ?? 0,
+      actualCents: x.salePrice ?? 0,
+      predictedProfitCents: rec?.expectedNetProfitAtCurrentBid ?? 0,
+      actualProfitCents: x.netRealizedProfit ?? 0,
+      maximumBidCents: rec?.maximumRecommendedHammerBid ?? 0,
+      purchasePriceCents: out?.finalHammerPrice ?? 0,
+      daysHeld: x.daysToSell ?? 0,
+    };
+  });
+  const m = accuracyMetrics(data);
+  const metrics = [
+    ['Completed outcomes', m.count],
+    [
+      'Mean absolute resale-value error',
+      usd(m.meanAbsoluteResaleValueErrorCents / 100),
+    ],
+    [
+      'Median absolute resale-value error',
+      usd(m.medianAbsoluteResaleValueErrorCents / 100),
+    ],
+    ['Mean profit error', usd(m.meanProfitErrorCents / 100)],
+    ['Estimate accuracy', `${(m.accuracyBasisPoints / 100).toFixed(0)}%`],
+    ['Profitable resales', `${(m.profitableBasisPoints / 100).toFixed(0)}%`],
+    [
+      'Maximum-bid compliance',
+      `${(m.maximumBidComplianceBasisPoints / 100).toFixed(0)}%`,
+    ],
+    ['Average holding period', `${m.averageHoldingPeriodDays} days`],
+  ];
+  return (
+    <>
+      <h1>Historical prediction accuracy</h1>
+      <p className="callout">
+        An estimate is counted as accurate when actual resale price is within
+        15% of its forecast. This is historical estimate accuracy, not
+        machine-learning model accuracy.
+      </p>
+      <section className="grid">
+        {metrics.map(([l, v]) => (
+          <article className="card metric" key={l}>
+            <span className="muted">{l}</span>
+            <b>{v}</b>
+          </article>
+        ))}
+      </section>
+    </>
+  );
+}

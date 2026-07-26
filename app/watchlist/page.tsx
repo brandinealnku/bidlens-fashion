@@ -10,6 +10,7 @@ export default async function Page() {
       listing: {
         include: {
           recommendations: { orderBy: { calculatedAt: 'desc' }, take: 1 },
+          analyses: { orderBy: { createdAt: 'desc' }, take: 1 },
         },
       },
     },
@@ -23,6 +24,16 @@ export default async function Page() {
     maxBid: record.listing.recommendations[0]?.maximumRecommendedHammerBid ?? 0,
     recommendation:
       record.listing.recommendations[0]?.recommendation ?? 'REVIEW',
+    expectedProfit:
+      record.listing.recommendations[0]?.expectedNetProfitAtCurrentBid ?? 0,
+    expectedRoi:
+      record.listing.recommendations[0]?.expectedROIAtCurrentBid ?? null,
+    auctionEndAt: record.listing.auctionEndAt?.toISOString() ?? null,
+    userMaximumBid: record.userMaximumBid,
+    plannedBid: record.plannedBid,
+    priority: record.priority,
+    decisionDeadline: record.decisionDeadline?.toISOString().slice(0, 10) ?? '',
+    notes: record.notes ?? '',
   }));
   return (
     <>

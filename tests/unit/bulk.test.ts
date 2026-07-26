@@ -1,0 +1,45 @@
+import { describe, expect, it } from 'vitest';
+import {
+  parseCsvBulk,
+  parseJsonBulk,
+  providerRows,
+} from '@/lib/bulk/providers';
+import { scannerMarketRank } from '@/lib/bulk/ranking';
+describe('V2 bulk scanner', () => {
+  it('imports deterministic demo listings', () =>
+    expect(providerRows('DEMO')).toHaveLength(3));
+  it('parses CSV money into integer cents', () =>
+    expect(
+      parseCsvBulk('title,category,currentBid\nBag,HANDBAG,12.34')[0].value
+        ?.currentBidCents,
+    ).toBe(1234));
+  it('preserves row-level JSON validation failures', () => {
+    const rows = parseJsonBulk(
+      '[{"title":"Valid bag","category":"HANDBAG","currentBidCents":1000},{"title":""}]',
+    );
+    expect(rows[0].value).toBeTruthy();
+    expect(rows[1].error).toBeTruthy();
+  });
+  it('enforces the 50 item batch limit', () =>
+    expect(() =>
+      parseJsonBulk(
+        JSON.stringify(
+          Array.from({ length: 51 }, (_, i) => ({
+            title: `Item ${i}`,
+            category: 'TOP',
+            currentBidCents: 100,
+          })),
+        ),
+      ),
+    ).toThrow(/50/));
+  it('penalizes bids above maximum', () =>
+    expect(
+      scannerMarketRank({
+        opportunityScore: 80,
+        confidenceBasisPoints: 8000,
+        headroomCents: -1,
+        maximumBidCents: 10000,
+        comparableCount: 4,
+      }),
+    ).toBeLessThan(60));
+});

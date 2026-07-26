@@ -1,0 +1,112 @@
+import { db } from '@/lib/db/client';
+import { requireCurrentUser } from '@/lib/auth/current-user';
+import { usd } from '@/lib/demo';
+export const dynamic = 'force-dynamic';
+export default async function InsightsPage() {
+  const user = await requireCurrentUser();
+  const [inventory, resales, active] = await Promise.all([
+    db.inventoryItem.findMany({
+      where: { userId: user.id },
+      include: { listing: true },
+    }),
+    db.resaleOutcome.findMany({
+      where: { userId: user.id },
+      include: { listing: true },
+    }),
+    db.auctionListing.count({
+      where: {
+        userId: user.id,
+        decision: {
+          status: { in: ['NEW', 'REVIEWING', 'WATCHING', 'BID_PLANNED'] },
+        },
+      },
+    }),
+  ]);
+  const sold = resales.filter((x) => x.soldAt && x.salePrice != null);
+  const invested = inventory.reduce(
+    (s, x) =>
+      s +
+      x.purchasePriceCents +
+      x.buyerPremiumCents +
+      x.taxCents +
+      x.inboundShippingCents +
+      x.authenticationCostCents +
+      x.cleaningRepairCostCents +
+      x.otherAcquisitionCostsCents,
+    0,
+  );
+  const revenue = sold.reduce((s, x) => s + (x.salePrice ?? 0), 0);
+  const profit = sold.reduce((s, x) => s + (x.netRealizedProfit ?? 0), 0);
+  const metrics = [
+    ['Total invested', usd(invested / 100)],
+    ['Total revenue', usd(revenue / 100)],
+    ['Realized profit', usd(profit / 100)],
+    ['Active opportunities', active],
+    [
+      'Active inventory',
+      inventory.filter(
+        (x) => !['SOLD', 'CLOSED', 'RETURNED'].includes(x.status),
+      ).length,
+    ],
+    ['Sold items', sold.length],
+    [
+      'Sell-through',
+      `${resales.length ? Math.round((sold.length * 100) / resales.length) : 0}%`,
+    ],
+    [
+      'Average holding period',
+      `${sold.length ? Math.round(sold.reduce((s, x) => s + (x.daysToSell ?? 0), 0) / sold.length) : 0} days`,
+    ],
+  ];
+  const groups = new Map<string, { count: number; profit: number }>();
+  for (const x of sold) {
+    const key = x.listing.category;
+    const g = groups.get(key) ?? { count: 0, profit: 0 };
+    g.count++;
+    g.profit += x.netRealizedProfit ?? 0;
+    groups.set(key, g);
+  }
+  return (
+    <>
+      <h1>Reseller performance insights</h1>
+      <p className="muted">
+        Realized outcomes—not projected wins—drive these portfolio metrics.
+      </p>
+      <section className="grid">
+        {metrics.map(([l, v]) => (
+          <article className="card metric" key={l}>
+            <span className="muted">{l}</span>
+            <b>{v}</b>
+          </article>
+        ))}
+      </section>
+      <section className="card opps table-wrap">
+        <h2>Performance by category</h2>
+        {!groups.size ? (
+          <p>Complete a resale to populate segment insights.</p>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th>Category</th>
+                <th>Sold</th>
+                <th>Realized profit</th>
+                <th>Average profit</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[...groups].map(([k, v]) => (
+                <tr key={k}>
+                  <td>{k}</td>
+                  <td>{v.count}</td>
+                  <td>{usd(v.profit / 100)}</td>
+                  <td>{usd(v.profit / v.count / 100)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
+    </>
+  );
+}

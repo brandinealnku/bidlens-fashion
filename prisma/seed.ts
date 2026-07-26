@@ -16,6 +16,15 @@ async function main() {
     update: {},
     create: { userId: DEMO_USER.id },
   });
+  await db.resellerProfile.upsert({
+    where: { userId: DEMO_USER.id },
+    update: {},
+    create: {
+      userId: DEMO_USER.id,
+      preferredBrands: '["Maison Aurelia","Ridge Heritage"]',
+      preferredCategories: '["HANDBAG","JACKET"]',
+    },
+  });
   for (const x of opportunities) {
     await db.auctionListing.upsert({
       where: { id: x.id },
@@ -93,6 +102,112 @@ async function main() {
         opportunityScore: x.rec === 'BUY' ? 82 : x.rec === 'REVIEW' ? 61 : 25,
         recommendation: x.rec,
         warnings: '[]',
+      },
+    });
+  }
+  const histories = [
+    {
+      id: 'handbag',
+      hammer: 18000,
+      premium: 3240,
+      tax: 1593,
+      inbound: 1800,
+      sale: 62000,
+      fees: 8060,
+      payment: 1860,
+      outbound: 1800,
+      profit: 25447,
+      roi: 10398,
+      days: 32,
+      marketplace: 'eBay',
+    },
+    {
+      id: 'shoes',
+      hammer: 14000,
+      premium: 2520,
+      tax: 1239,
+      inbound: 2400,
+      sale: 20500,
+      fees: 3075,
+      payment: 615,
+      outbound: 2200,
+      profit: -5549,
+      roi: -2752,
+      days: 91,
+      marketplace: 'Poshmark',
+    },
+  ];
+  for (const h of histories) {
+    await db.auctionOutcome.upsert({
+      where: { id: `outcome-${h.id}` },
+      update: {},
+      create: {
+        id: `outcome-${h.id}`,
+        userId: DEMO_USER.id,
+        auctionListingId: h.id,
+        outcome: 'WON',
+        finalHammerPrice: h.hammer,
+        finalBuyerPremium: h.premium,
+        finalTax: h.tax,
+        finalInboundShipping: h.inbound,
+        finalPickupCost: 0,
+        authenticationCost: 0,
+        cleaningCost: 0,
+        repairCost: 0,
+        otherCost: 0,
+        acquiredAt: new Date(Date.now() - h.days * 86400000),
+      },
+    });
+    await db.resaleOutcome.upsert({
+      where: { id: `resale-${h.id}` },
+      update: {},
+      create: {
+        id: `resale-${h.id}`,
+        userId: DEMO_USER.id,
+        auctionListingId: h.id,
+        marketplace: h.marketplace,
+        listedAt: new Date(Date.now() - (h.days - 5) * 86400000),
+        soldAt: new Date(),
+        listingPrice: h.sale,
+        salePrice: h.sale,
+        marketplaceFees: h.fees,
+        paymentFees: h.payment,
+        promotionalFees: 0,
+        shippingChargedToBuyer: 0,
+        outboundShippingCost: h.outbound,
+        packagingCost: 300,
+        refundAmount: 0,
+        otherCosts: 0,
+        netRealizedProfit: h.profit,
+        realizedROI: h.roi,
+        daysToSell: h.days,
+        predictionErrorAmount:
+          h.sale -
+          (opportunities.find((x) => x.id === h.id)?.resale ?? 0) * 100,
+        predictionErrorPercent: 0,
+      },
+    });
+    await db.inventoryItem.upsert({
+      where: { auctionListingId: h.id },
+      update: {},
+      create: {
+        userId: DEMO_USER.id,
+        auctionListingId: h.id,
+        status: 'SOLD',
+        purchasePriceCents: h.hammer,
+        buyerPremiumCents: h.premium,
+        taxCents: h.tax,
+        inboundShippingCents: h.inbound,
+        intendedResaleMarketplace: h.marketplace,
+        listingDate: new Date(Date.now() - (h.days - 5) * 86400000),
+        askingPriceCents: h.sale,
+        acceptedOfferCents: h.sale,
+        saleDate: new Date(),
+        marketplaceFeeCents: h.fees,
+        paymentFeeCents: h.payment,
+        outboundShippingCents: h.outbound,
+        actualProfitCents: h.profit,
+        actualRoiBasisPoints: h.roi,
       },
     });
   }
