@@ -19,7 +19,7 @@ describe('credential-free flow', () => {
       category: 'HANDBAG',
       currency: 'USD',
     });
-    expect(analysis.analysis.candidates).toHaveLength(1);
+    expect(analysis.analysis.candidates).toHaveLength(3);
     expect(comps.some((x) => x.status === 'ACTIVE_LISTING')).toBe(true);
   });
   it('fails permitted retrieval safely', async () =>
