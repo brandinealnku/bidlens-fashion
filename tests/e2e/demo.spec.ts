@@ -12,8 +12,14 @@ test('demo scanner persists ranked opportunities', async ({ page }) => {
   await expect(page.getByText(/Imported 3 rows/)).toBeVisible();
   await page.getByRole('button', { name: 'Analyze batch' }).click();
   await expect(page.getByText('Batch analysis complete.')).toBeVisible();
-  await expect(page.getByRole('link', { name: /Maison Aurelia/ })).toBeVisible();
+  await expect(
+    page.getByRole('link', { name: /Maison Aurelia/ }),
+  ).toBeVisible();
   await page.goto('/opportunities');
-  await expect(page.getByRole('heading', { name: 'Opportunity Inbox' })).toBeVisible();
-  await expect(page.getByRole('link', { name: /Maison Aurelia/ })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Opportunity Inbox' }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('link', { name: /Maison Aurelia/ }),
+  ).toBeVisible();
 });

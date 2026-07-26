@@ -56,7 +56,14 @@ export default async function Dashboard() {
             Database-backed decisions for the demo reseller.
           </p>
         </div>
-        <span><a className="button" href="/opportunities">Review opportunities</a>{' '}<a className="button secondary" href="/analyze">Scan listings</a></span>
+        <span>
+          <a className="button" href="/opportunities">
+            Review opportunities
+          </a>{' '}
+          <a className="button secondary" href="/analyze">
+            Scan listings
+          </a>
+        </span>
       </div>
       <section className="grid" aria-label="Summary metrics">
         {[

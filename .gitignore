@@ -11,3 +11,5 @@ coverage
 
 prisma/*.db
 prisma/*.db-*
+
+*.tsbuildinfo

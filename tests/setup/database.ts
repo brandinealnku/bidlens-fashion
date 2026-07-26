@@ -8,10 +8,17 @@ export default function setup() {
     const target = databasePath + suffix;
     if (existsSync(target)) rmSync(target, { force: true });
   }
-  execFileSync(path.join(process.cwd(), 'node_modules', '.bin', 'prisma'), ['db', 'push', '--skip-generate'], {
-    cwd: process.cwd(), env: { ...process.env, DATABASE_URL: 'file:./test.db' }, stdio: 'inherit',
-  });
+  execFileSync(
+    path.join(process.cwd(), 'node_modules', '.bin', 'prisma'),
+    ['db', 'push', '--skip-generate'],
+    {
+      cwd: process.cwd(),
+      env: { ...process.env, DATABASE_URL: 'file:./test.db' },
+      stdio: 'inherit',
+    },
+  );
   return () => {
-    for (const suffix of ['', '-journal', '-shm', '-wal']) rmSync(databasePath + suffix, { force: true });
+    for (const suffix of ['', '-journal', '-shm', '-wal'])
+      rmSync(databasePath + suffix, { force: true });
   };
 }

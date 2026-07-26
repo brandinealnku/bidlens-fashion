@@ -7,7 +7,14 @@ type Item = {
   currentBid: number;
   maxBid: number;
   recommendation: string;
-  expectedProfit:number;expectedRoi:number|null;auctionEndAt:string|null;userMaximumBid:number|null;plannedBid:number|null;priority:string;decisionDeadline:string;notes:string;
+  expectedProfit: number;
+  expectedRoi: number | null;
+  auctionEndAt: string | null;
+  userMaximumBid: number | null;
+  plannedBid: number | null;
+  priority: string;
+  decisionDeadline: string;
+  notes: string;
 };
 export function WatchlistClient({ initial }: { initial: Item[] }) {
   const [items, setItems] = useState(initial),
@@ -57,7 +64,22 @@ export function WatchlistClient({ initial }: { initial: Item[] }) {
               <span className={'badge ' + item.recommendation}>
                 {item.recommendation}
               </span>
-              <span>${(item.expectedProfit/100).toFixed(2)} profit · {item.expectedRoi===null?'—':`${(item.expectedRoi/100).toFixed(1)}% ROI`}<br/>{item.auctionEndAt?`${Math.max(0,Math.ceil((new Date(item.auctionEndAt).getTime()-Date.now())/3600000))} hours remaining`:'No end time'}<br/><b>{item.currentBid<=item.maxBid?'Review and plan bid':'Pass: above maximum'}</b></span>
+              <span>
+                ${(item.expectedProfit / 100).toFixed(2)} profit ·{' '}
+                {item.expectedRoi === null
+                  ? '—'
+                  : `${(item.expectedRoi / 100).toFixed(1)}% ROI`}
+                <br />
+                {item.auctionEndAt
+                  ? `${Math.max(0, Math.ceil((new Date(item.auctionEndAt).getTime() - Date.now()) / 3600000))} hours remaining`
+                  : 'No end time'}
+                <br />
+                <b>
+                  {item.currentBid <= item.maxBid
+                    ? 'Review and plan bid'
+                    : 'Pass: above maximum'}
+                </b>
+              </span>
               <form
                 onSubmit={async (event: FormEvent<HTMLFormElement>) => {
                   event.preventDefault();
@@ -112,8 +134,75 @@ export function WatchlistClient({ initial }: { initial: Item[] }) {
                   Remove
                 </button>
               </form>
-              <form onSubmit={async(event)=>{event.preventDefault();const d=new FormData(event.currentTarget),money=(n:string)=>d.get(n)===''?null:Math.round(Number(d.get(n))*100);const result=await mutate('updateWatchlistPlan',item.listingId,{userMaximumBid:money('personalMax'),plannedBid:money('plannedBid'),priority:String(d.get('priority')),decisionDeadline:String(d.get('deadline')),notes:String(d.get('notes'))});if(result)setMessage('Watchlist plan saved.')}}>
-                <label>Personal maximum ($)<input name="personalMax" type="number" min="0" step=".01" defaultValue={item.userMaximumBid===null?'':item.userMaximumBid/100}/></label><label>Planned bid ($)<input name="plannedBid" type="number" min="0" step=".01" defaultValue={item.plannedBid===null?'':item.plannedBid/100}/></label><label>Priority<select name="priority" defaultValue={item.priority}>{['HIGH','MEDIUM','LOW'].map(x=><option key={x}>{x}</option>)}</select></label><label>Decision deadline<input name="deadline" type="date" defaultValue={item.decisionDeadline}/></label><label>Notes<textarea name="notes" defaultValue={item.notes}/></label><button className="button secondary">Save plan</button>
+              <form
+                onSubmit={async (event) => {
+                  event.preventDefault();
+                  const d = new FormData(event.currentTarget),
+                    money = (n: string) =>
+                      d.get(n) === ''
+                        ? null
+                        : Math.round(Number(d.get(n)) * 100);
+                  const result = await mutate(
+                    'updateWatchlistPlan',
+                    item.listingId,
+                    {
+                      userMaximumBid: money('personalMax'),
+                      plannedBid: money('plannedBid'),
+                      priority: String(d.get('priority')),
+                      decisionDeadline: String(d.get('deadline')),
+                      notes: String(d.get('notes')),
+                    },
+                  );
+                  if (result) setMessage('Watchlist plan saved.');
+                }}
+              >
+                <label>
+                  Personal maximum ($)
+                  <input
+                    name="personalMax"
+                    type="number"
+                    min="0"
+                    step=".01"
+                    defaultValue={
+                      item.userMaximumBid === null
+                        ? ''
+                        : item.userMaximumBid / 100
+                    }
+                  />
+                </label>
+                <label>
+                  Planned bid ($)
+                  <input
+                    name="plannedBid"
+                    type="number"
+                    min="0"
+                    step=".01"
+                    defaultValue={
+                      item.plannedBid === null ? '' : item.plannedBid / 100
+                    }
+                  />
+                </label>
+                <label>
+                  Priority
+                  <select name="priority" defaultValue={item.priority}>
+                    {['HIGH', 'MEDIUM', 'LOW'].map((x) => (
+                      <option key={x}>{x}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Decision deadline
+                  <input
+                    name="deadline"
+                    type="date"
+                    defaultValue={item.decisionDeadline}
+                  />
+                </label>
+                <label>
+                  Notes
+                  <textarea name="notes" defaultValue={item.notes} />
+                </label>
+                <button className="button secondary">Save plan</button>
               </form>
             </article>
           ))

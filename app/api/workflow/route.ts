@@ -75,7 +75,8 @@ export async function POST(request: NextRequest) {
       recalculateBidRecommendation: () =>
         workflow.recalculateBidRecommendation(required()),
       saveToWatchlist: () => workflow.saveToWatchlist(required(), payload),
-      updateWatchlistPlan: () => workflow.updateWatchlistPlan(required(),payload),
+      updateWatchlistPlan: () =>
+        workflow.updateWatchlistPlan(required(), payload),
       removeFromWatchlist: () => workflow.removeFromWatchlist(required()),
       updateCurrentBid: () =>
         workflow.updateCurrentBid(required(), Number(payload.currentBid)),

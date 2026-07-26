@@ -421,7 +421,6 @@ export async function addComparable(listingId: string, raw: unknown) {
       shipping: input.shippingPrice,
       sourceUrl: input.sourceUrl ?? undefined,
       provider: 'MANUAL',
-      evidenceType: input.comparableStatus.startsWith('SOLD') ? 'COMPLETED_SALE' : input.comparableStatus === 'ACTIVE_LISTING' ? 'ACTIVE_LISTING' : 'APPRAISAL_REFERENCE',
     });
   const record = await db.comparable.create({
     data: {
@@ -429,6 +428,11 @@ export async function addComparable(listingId: string, raw: unknown) {
       userId: user.id,
       auctionListingId: listingId,
       provider: 'MANUAL',
+      evidenceType: input.comparableStatus.startsWith('SOLD')
+        ? 'COMPLETED_SALE'
+        : input.comparableStatus === 'ACTIVE_LISTING'
+          ? 'ACTIVE_LISTING'
+          : 'APPRAISAL_REFERENCE',
       totalPrice: input.price + input.shippingPrice,
       similarityScore: sim,
       dataQualityScore: quality,
@@ -695,7 +699,24 @@ export async function saveToWatchlist(
   await audit(user.id, 'WATCHLIST_CHANGED', 'WatchlistItem', item.id);
   return item;
 }
-export async function updateWatchlistPlan(listingId:string,raw:Record<string,unknown>){const priority=String(raw.priority);if(!['HIGH','MEDIUM','LOW'].includes(priority))throw new Error('Invalid priority');return saveToWatchlist(listingId,{userMaximumBid:raw.userMaximumBid==null?null:cents(raw.userMaximumBid),plannedBid:raw.plannedBid==null?null:cents(raw.plannedBid),priority,decisionDeadline:raw.decisionDeadline?new Date(String(raw.decisionDeadline)):null,notes:raw.notes?String(raw.notes):null})}
+export async function updateWatchlistPlan(
+  listingId: string,
+  raw: Record<string, unknown>,
+) {
+  const priority = String(raw.priority);
+  if (!['HIGH', 'MEDIUM', 'LOW'].includes(priority))
+    throw new Error('Invalid priority');
+  return saveToWatchlist(listingId, {
+    userMaximumBid:
+      raw.userMaximumBid == null ? null : cents(raw.userMaximumBid),
+    plannedBid: raw.plannedBid == null ? null : cents(raw.plannedBid),
+    priority,
+    decisionDeadline: raw.decisionDeadline
+      ? new Date(String(raw.decisionDeadline))
+      : null,
+    notes: raw.notes ? String(raw.notes) : null,
+  });
+}
 export async function removeFromWatchlist(listingId: string) {
   const { user } = await ownedListing(listingId);
   await db.watchlistItem.deleteMany({
@@ -859,8 +880,42 @@ export async function recordAuctionOutcome(
     },
   });
   await audit(user.id, 'AUCTION_OUTCOME_RECORDED', 'AuctionOutcome', record.id);
-  await db.opportunityDecision.upsert({where:{auctionListingId:listingId},create:{auctionListingId:listingId,status:outcome},update:{status:outcome}});
-  if(outcome==='WON') await db.inventoryItem.upsert({where:{auctionListingId:listingId},create:{userId:user.id,auctionListingId:listingId,status:'AWAITING_PAYMENT',acquisitionDate:record.acquiredAt,purchasePriceCents:record.finalHammerPrice??0,buyerPremiumCents:record.finalBuyerPremium??0,taxCents:record.finalTax??0,inboundShippingCents:record.finalInboundShipping??0,authenticationCostCents:record.authenticationCost??0,cleaningRepairCostCents:(record.cleaningCost??0)+(record.repairCost??0),otherAcquisitionCostsCents:(record.finalPickupCost??0)+(record.otherCost??0)},update:{acquisitionDate:record.acquiredAt,purchasePriceCents:record.finalHammerPrice??0,buyerPremiumCents:record.finalBuyerPremium??0,taxCents:record.finalTax??0,inboundShippingCents:record.finalInboundShipping??0,authenticationCostCents:record.authenticationCost??0,cleaningRepairCostCents:(record.cleaningCost??0)+(record.repairCost??0),otherAcquisitionCostsCents:(record.finalPickupCost??0)+(record.otherCost??0)}});
+  await db.opportunityDecision.upsert({
+    where: { auctionListingId: listingId },
+    create: { auctionListingId: listingId, status: outcome },
+    update: { status: outcome },
+  });
+  if (outcome === 'WON')
+    await db.inventoryItem.upsert({
+      where: { auctionListingId: listingId },
+      create: {
+        userId: user.id,
+        auctionListingId: listingId,
+        status: 'AWAITING_PAYMENT',
+        acquisitionDate: record.acquiredAt,
+        purchasePriceCents: record.finalHammerPrice ?? 0,
+        buyerPremiumCents: record.finalBuyerPremium ?? 0,
+        taxCents: record.finalTax ?? 0,
+        inboundShippingCents: record.finalInboundShipping ?? 0,
+        authenticationCostCents: record.authenticationCost ?? 0,
+        cleaningRepairCostCents:
+          (record.cleaningCost ?? 0) + (record.repairCost ?? 0),
+        otherAcquisitionCostsCents:
+          (record.finalPickupCost ?? 0) + (record.otherCost ?? 0),
+      },
+      update: {
+        acquisitionDate: record.acquiredAt,
+        purchasePriceCents: record.finalHammerPrice ?? 0,
+        buyerPremiumCents: record.finalBuyerPremium ?? 0,
+        taxCents: record.finalTax ?? 0,
+        inboundShippingCents: record.finalInboundShipping ?? 0,
+        authenticationCostCents: record.authenticationCost ?? 0,
+        cleaningRepairCostCents:
+          (record.cleaningCost ?? 0) + (record.repairCost ?? 0),
+        otherAcquisitionCostsCents:
+          (record.finalPickupCost ?? 0) + (record.otherCost ?? 0),
+      },
+    });
   return record;
 }
 export async function recordResaleOutcome(
@@ -952,8 +1007,41 @@ export async function recordResaleOutcome(
     },
   });
   await audit(user.id, 'RESALE_OUTCOME_RECORDED', 'ResaleOutcome', record.id);
-  await db.inventoryItem.updateMany({where:{auctionListingId:listingId,userId:user.id},data:{status:record.returned?'RETURNED':record.soldAt?'SOLD':'LISTED',intendedResaleMarketplace:record.marketplace,listingDate:record.listedAt,askingPriceCents:record.listingPrice,acceptedOfferCents:record.salePrice,saleDate:record.soldAt,marketplaceFeeCents:record.marketplaceFees??0,paymentFeeCents:record.paymentFees??0,outboundShippingCents:record.outboundShippingCost??0,refundReturnCostsCents:record.refundAmount??0,actualProfitCents:record.netRealizedProfit,actualRoiBasisPoints:record.realizedROI,actualNetProceedsCents:(record.salePrice??0)+(record.shippingChargedToBuyer??0)-(record.marketplaceFees??0)-(record.paymentFees??0)-(record.promotionalFees??0)-(record.outboundShippingCost??0)-(record.packagingCost??0)-(record.refundAmount??0)-(record.otherCosts??0)}});
-  await db.opportunityDecision.upsert({where:{auctionListingId:listingId},create:{auctionListingId:listingId,status:record.soldAt?'SOLD':'LISTED_FOR_RESALE'},update:{status:record.soldAt?'SOLD':'LISTED_FOR_RESALE'}});
+  await db.inventoryItem.updateMany({
+    where: { auctionListingId: listingId, userId: user.id },
+    data: {
+      status: record.returned ? 'RETURNED' : record.soldAt ? 'SOLD' : 'LISTED',
+      intendedResaleMarketplace: record.marketplace,
+      listingDate: record.listedAt,
+      askingPriceCents: record.listingPrice,
+      acceptedOfferCents: record.salePrice,
+      saleDate: record.soldAt,
+      marketplaceFeeCents: record.marketplaceFees ?? 0,
+      paymentFeeCents: record.paymentFees ?? 0,
+      outboundShippingCents: record.outboundShippingCost ?? 0,
+      refundReturnCostsCents: record.refundAmount ?? 0,
+      actualProfitCents: record.netRealizedProfit,
+      actualRoiBasisPoints: record.realizedROI,
+      actualNetProceedsCents:
+        (record.salePrice ?? 0) +
+        (record.shippingChargedToBuyer ?? 0) -
+        (record.marketplaceFees ?? 0) -
+        (record.paymentFees ?? 0) -
+        (record.promotionalFees ?? 0) -
+        (record.outboundShippingCost ?? 0) -
+        (record.packagingCost ?? 0) -
+        (record.refundAmount ?? 0) -
+        (record.otherCosts ?? 0),
+    },
+  });
+  await db.opportunityDecision.upsert({
+    where: { auctionListingId: listingId },
+    create: {
+      auctionListingId: listingId,
+      status: record.soldAt ? 'SOLD' : 'LISTED_FOR_RESALE',
+    },
+    update: { status: record.soldAt ? 'SOLD' : 'LISTED_FOR_RESALE' },
+  });
   return record;
 }
 export async function getSettings() {

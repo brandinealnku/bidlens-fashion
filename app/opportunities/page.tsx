@@ -4,8 +4,113 @@ import { usd } from '@/lib/demo';
 export const dynamic = 'force-dynamic';
 const money = (cents: number) => usd(cents / 100);
 export default async function OpportunitiesPage() {
-  const user = await requireCurrentUser(); const items = await loadOpportunities(user.id);
-  return <><div className="top"><div><h1>Opportunity Inbox</h1><p className="muted">A prioritized, explainable queue across every imported listing.</p></div><a className="button" href="/analyze">Scan listings</a></div>
-    <div className="filters" aria-label="Opportunity views">{['Top opportunities','Ending soon','Strong buys','Needs review','On watchlist','Above maximum bid','Won—not purchased','Purchased—not listed','Listed—not sold','Recently sold','Passed'].map(x=><span className="step" key={x}>{x}</span>)}</div>
-    <section className="card table-wrap"><h2>Prioritized opportunities</h2>{items.length===0?<p>No opportunities yet. Analyze a demo listing to begin.</p>:<table><thead><tr><th>Opportunity</th><th>Bid / max</th><th>Headroom</th><th>Resale</th><th>Profit / ROI</th><th>Scores</th><th>Status & next action</th></tr></thead><tbody>{items.map(x=><tr key={x.listing.id}><td><a href={`/analysis/${x.listing.id}`}><b>{x.listing.title}</b></a><small>{x.analysis?.brand ?? 'Brand under review'} · {x.analysis?.suspectedModel ?? x.listing.category}<br/>{x.listing.sourcePlatform}</small></td><td>{money(x.listing.currentBid)} / {money(x.recommendation?.maximumRecommendedHammerBid ?? 0)}</td><td className={x.headroom<0?'negative':'positive'}>{money(x.headroom)}</td><td>{money(x.valuation?.expectedResaleValue ?? 0)}</td><td>{money(x.recommendation?.expectedNetProfitAtCurrentBid ?? 0)}<br/>{((x.recommendation?.expectedROIAtCurrentBid ?? 0)/100).toFixed(0)}%</td><td>Market {x.explanation.marketScore}<br/><b>Personal {x.explanation.personalScore}</b></td><td><span className="badge REVIEW">{x.status}</span><small>{x.explanation.recommendationReason}<br/><b>{x.explanation.recommendedNextAction}</b>{x.triggeredRules.map(rule=><span className="callout" key={rule.id}>Rule: {rule.message}</span>)}</small></td></tr>)}</tbody></table>}</section></>;
+  const user = await requireCurrentUser();
+  const items = await loadOpportunities(user.id);
+  return (
+    <>
+      <div className="top">
+        <div>
+          <h1>Opportunity Inbox</h1>
+          <p className="muted">
+            A prioritized, explainable queue across every imported listing.
+          </p>
+        </div>
+        <a className="button" href="/analyze">
+          Scan listings
+        </a>
+      </div>
+      <div className="filters" aria-label="Opportunity views">
+        {[
+          'Top opportunities',
+          'Ending soon',
+          'Strong buys',
+          'Needs review',
+          'On watchlist',
+          'Above maximum bid',
+          'Won—not purchased',
+          'Purchased—not listed',
+          'Listed—not sold',
+          'Recently sold',
+          'Passed',
+        ].map((x) => (
+          <span className="step" key={x}>
+            {x}
+          </span>
+        ))}
+      </div>
+      <section className="card table-wrap">
+        <h2>Prioritized opportunities</h2>
+        {items.length === 0 ? (
+          <p>No opportunities yet. Analyze a demo listing to begin.</p>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th>Opportunity</th>
+                <th>Bid / max</th>
+                <th>Headroom</th>
+                <th>Resale</th>
+                <th>Profit / ROI</th>
+                <th>Scores</th>
+                <th>Status & next action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((x) => (
+                <tr key={x.listing.id}>
+                  <td>
+                    <a href={`/analysis/${x.listing.id}`}>
+                      <b>{x.listing.title}</b>
+                    </a>
+                    <small>
+                      {x.analysis?.brand ?? 'Brand under review'} ·{' '}
+                      {x.analysis?.suspectedModel ?? x.listing.category}
+                      <br />
+                      {x.listing.sourcePlatform}
+                    </small>
+                  </td>
+                  <td>
+                    {money(x.listing.currentBid)} /{' '}
+                    {money(x.recommendation?.maximumRecommendedHammerBid ?? 0)}
+                  </td>
+                  <td className={x.headroom < 0 ? 'negative' : 'positive'}>
+                    {money(x.headroom)}
+                  </td>
+                  <td>{money(x.valuation?.expectedResaleValue ?? 0)}</td>
+                  <td>
+                    {money(
+                      x.recommendation?.expectedNetProfitAtCurrentBid ?? 0,
+                    )}
+                    <br />
+                    {(
+                      (x.recommendation?.expectedROIAtCurrentBid ?? 0) / 100
+                    ).toFixed(0)}
+                    %
+                  </td>
+                  <td>
+                    Market {x.explanation.marketScore}
+                    <br />
+                    <b>Personal {x.explanation.personalScore}</b>
+                  </td>
+                  <td>
+                    <span className="badge REVIEW">{x.status}</span>
+                    <small>
+                      {x.explanation.recommendationReason}
+                      <br />
+                      <b>{x.explanation.recommendedNextAction}</b>
+                      {x.triggeredRules.map((rule) => (
+                        <span className="callout" key={rule.id}>
+                          Rule: {rule.message}
+                        </span>
+                      ))}
+                    </small>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
+    </>
+  );
 }

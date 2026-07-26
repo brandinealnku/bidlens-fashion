@@ -1,4 +1,167 @@
-import { db } from '@/lib/db/client';import { requireCurrentUser } from '@/lib/auth/current-user';
-async function createRule(data:FormData){'use server';const user=await requireCurrentUser();await db.decisionRule.create({data:{userId:user.id,name:String(data.get('name')),conditions:JSON.stringify([{field:String(data.get('field')),operator:String(data.get('operator')),value:Number(data.get('value'))}]),action:String(data.get('action')),message:String(data.get('message')),priority:Number(data.get('priority'))}})}
-async function updateRule(data:FormData){'use server';const user=await requireCurrentUser(),id=String(data.get('id'));const rule=await db.decisionRule.findFirst({where:{id,userId:user.id}});if(!rule)throw new Error('Rule not found');await db.decisionRule.update({where:{id},data:{name:String(data.get('name')),enabled:data.get('enabled')==='on',action:String(data.get('action')),message:String(data.get('message')),priority:Number(data.get('priority'))}})}
-export default async function RulesPage(){const user=await requireCurrentUser();const rules=await db.decisionRule.findMany({where:{userId:user.id},orderBy:{priority:'desc'}});return <><h1>Decision rules</h1><p className="muted">Deterministic, explainable rules flag or route opportunities. Rules never place bids.</p><form action={createRule} className="card form"><label className="field">Rule name<input required name="name"/></label><label className="field">Field<select name="field"><option value="expectedProfitCents">Expected profit (cents)</option><option value="expectedRoiBasisPoints">ROI (basis points)</option><option value="currentBidCents">Current bid (cents)</option><option value="comparableCount">Comparable count</option></select></label><label className="field">Operator<select name="operator">{['LT','LTE','GT','GTE','EQ','NEQ'].map(x=><option key={x}>{x}</option>)}</select></label><label className="field">Value<input required type="number" name="value"/></label><label className="field">Action<select name="action">{['FLAG','PRIORITIZE','PASS','REQUIRE_REVIEW','ADD_TO_WATCHLIST'].map(x=><option key={x}>{x}</option>)}</select></label><label className="field">Priority<input name="priority" type="number" defaultValue="10"/></label><label className="field full">Explanation shown when matched<input required name="message"/></label><button className="button" type="submit">Create rule</button></form><section className="card opps"><h2>Configured rules</h2>{!rules.length?<p>No rules configured.</p>:rules.map(x=><article className="row" key={x.id}><b>{x.name}</b><span>{x.action}</span><span>Priority {x.priority}</span><span>{x.enabled?'Enabled':'Disabled'}</span><span>{x.message}</span><form action={updateRule}><input type="hidden" name="id" value={x.id}/><label>Name<input name="name" defaultValue={x.name}/></label><label>Action<select name="action" defaultValue={x.action}>{['FLAG','PRIORITIZE','PASS','REQUIRE_REVIEW','ADD_TO_WATCHLIST'].map(a=><option key={a}>{a}</option>)}</select></label><label>Message<input name="message" defaultValue={x.message}/></label><label>Priority<input name="priority" type="number" defaultValue={x.priority}/></label><label><input name="enabled" type="checkbox" defaultChecked={x.enabled}/> Enabled</label><button className="button secondary">Save rule</button></form></article>)}</section></>}
+import { db } from '@/lib/db/client';
+import { requireCurrentUser } from '@/lib/auth/current-user';
+async function createRule(data: FormData) {
+  'use server';
+  const user = await requireCurrentUser();
+  await db.decisionRule.create({
+    data: {
+      userId: user.id,
+      name: String(data.get('name')),
+      conditions: JSON.stringify([
+        {
+          field: String(data.get('field')),
+          operator: String(data.get('operator')),
+          value: Number(data.get('value')),
+        },
+      ]),
+      action: String(data.get('action')),
+      message: String(data.get('message')),
+      priority: Number(data.get('priority')),
+    },
+  });
+}
+async function updateRule(data: FormData) {
+  'use server';
+  const user = await requireCurrentUser(),
+    id = String(data.get('id'));
+  const rule = await db.decisionRule.findFirst({
+    where: { id, userId: user.id },
+  });
+  if (!rule) throw new Error('Rule not found');
+  await db.decisionRule.update({
+    where: { id },
+    data: {
+      name: String(data.get('name')),
+      enabled: data.get('enabled') === 'on',
+      action: String(data.get('action')),
+      message: String(data.get('message')),
+      priority: Number(data.get('priority')),
+    },
+  });
+}
+export default async function RulesPage() {
+  const user = await requireCurrentUser();
+  const rules = await db.decisionRule.findMany({
+    where: { userId: user.id },
+    orderBy: { priority: 'desc' },
+  });
+  return (
+    <>
+      <h1>Decision rules</h1>
+      <p className="muted">
+        Deterministic, explainable rules flag or route opportunities. Rules
+        never place bids.
+      </p>
+      <form action={createRule} className="card form">
+        <label className="field">
+          Rule name
+          <input required name="name" />
+        </label>
+        <label className="field">
+          Field
+          <select name="field">
+            <option value="expectedProfitCents">Expected profit (cents)</option>
+            <option value="expectedRoiBasisPoints">ROI (basis points)</option>
+            <option value="currentBidCents">Current bid (cents)</option>
+            <option value="comparableCount">Comparable count</option>
+          </select>
+        </label>
+        <label className="field">
+          Operator
+          <select name="operator">
+            {['LT', 'LTE', 'GT', 'GTE', 'EQ', 'NEQ'].map((x) => (
+              <option key={x}>{x}</option>
+            ))}
+          </select>
+        </label>
+        <label className="field">
+          Value
+          <input required type="number" name="value" />
+        </label>
+        <label className="field">
+          Action
+          <select name="action">
+            {[
+              'FLAG',
+              'PRIORITIZE',
+              'PASS',
+              'REQUIRE_REVIEW',
+              'ADD_TO_WATCHLIST',
+            ].map((x) => (
+              <option key={x}>{x}</option>
+            ))}
+          </select>
+        </label>
+        <label className="field">
+          Priority
+          <input name="priority" type="number" defaultValue="10" />
+        </label>
+        <label className="field full">
+          Explanation shown when matched
+          <input required name="message" />
+        </label>
+        <button className="button" type="submit">
+          Create rule
+        </button>
+      </form>
+      <section className="card opps">
+        <h2>Configured rules</h2>
+        {!rules.length ? (
+          <p>No rules configured.</p>
+        ) : (
+          rules.map((x) => (
+            <article className="row" key={x.id}>
+              <b>{x.name}</b>
+              <span>{x.action}</span>
+              <span>Priority {x.priority}</span>
+              <span>{x.enabled ? 'Enabled' : 'Disabled'}</span>
+              <span>{x.message}</span>
+              <form action={updateRule}>
+                <input type="hidden" name="id" value={x.id} />
+                <label>
+                  Name
+                  <input name="name" defaultValue={x.name} />
+                </label>
+                <label>
+                  Action
+                  <select name="action" defaultValue={x.action}>
+                    {[
+                      'FLAG',
+                      'PRIORITIZE',
+                      'PASS',
+                      'REQUIRE_REVIEW',
+                      'ADD_TO_WATCHLIST',
+                    ].map((a) => (
+                      <option key={a}>{a}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Message
+                  <input name="message" defaultValue={x.message} />
+                </label>
+                <label>
+                  Priority
+                  <input
+                    name="priority"
+                    type="number"
+                    defaultValue={x.priority}
+                  />
+                </label>
+                <label>
+                  <input
+                    name="enabled"
+                    type="checkbox"
+                    defaultChecked={x.enabled}
+                  />{' '}
+                  Enabled
+                </label>
+                <button className="button secondary">Save rule</button>
+              </form>
+            </article>
+          ))
+        )}
+      </section>
+    </>
+  );
+}
