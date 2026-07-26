@@ -84,7 +84,7 @@ const demo = {
   ],
 } as const;
 export class MockProductAnalysisProvider implements ProductAnalysisProvider {
-  async analyzeListing(_input: ProductAnalysisInput) {
+  async analyzeListing(input: ProductAnalysisInput) {
     const analysis = fashionAnalysisSchema.parse(demo);
     return { analysis, raw: JSON.stringify(demo) };
   }
@@ -98,7 +98,7 @@ abstract class JsonAi implements ProductAnalysisProvider {
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
         return { analysis: fashionAnalysisSchema.parse(JSON.parse(raw)), raw };
-      } catch (e) {
+      } catch {
         if (attempt === 1)
           throw new Error('AI returned an invalid structured analysis');
         raw = await this.call(
