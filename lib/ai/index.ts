@@ -84,7 +84,8 @@ const demo = {
   ],
 } as const;
 export class MockProductAnalysisProvider implements ProductAnalysisProvider {
-  async analyzeListing(input: ProductAnalysisInput) {
+  async analyzeListing(_input: ProductAnalysisInput) {
+    void _input;
     const analysis = fashionAnalysisSchema.parse(demo);
     return { analysis, raw: JSON.stringify(demo) };
   }
