@@ -1,6 +1,11 @@
 import { getListing } from '@/lib/services/workflow';
 import { notFound } from 'next/navigation';
+import { calculateScenario } from '@/lib/v3/intelligence';
+import { db } from '@/lib/db/client';
+import { requireCurrentUser } from '@/lib/auth/current-user';
+import { revalidatePath } from 'next/cache';
 export const dynamic = 'force-dynamic';
+async function saveScenario(data:FormData){'use server';const user=await requireCurrentUser(),auctionListingId=String(data.get('listingId')),name=String(data.get('name'));const listing=await db.auctionListing.findFirst({where:{id:auctionListingId,userId:user.id}});if(!listing)throw new Error('Listing not found');await db.$transaction([db.savedScenario.updateMany({where:{userId:user.id,auctionListingId},data:{isActive:false}}),db.savedScenario.upsert({where:{userId_auctionListingId_name:{userId:user.id,auctionListingId,name}},create:{userId:user.id,auctionListingId,name,resaleValueCents:Number(data.get('resale')),sellingFeeBasisPoints:Number(data.get('fee')),shippingCents:Number(data.get('shipping')),cleaningRepairCents:Number(data.get('cleaning')),authenticationCents:Number(data.get('authentication')),desiredProfitCents:Number(data.get('profit')),isActive:true},update:{isActive:true,resaleValueCents:Number(data.get('resale')),sellingFeeBasisPoints:Number(data.get('fee')),shippingCents:Number(data.get('shipping')),cleaningRepairCents:Number(data.get('cleaning')),authenticationCents:Number(data.get('authentication')),desiredProfitCents:Number(data.get('profit'))}})]);revalidatePath(`/analysis/${auctionListingId}`)}
 const money = (cents: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(
     cents / 100,
@@ -11,6 +16,18 @@ export default async function Analysis({ params }: { params: { id: string } }) {
   const analysis = listing.analyses[0],
     valuation = listing.valuations[0],
     bid = listing.recommendations[0];
+  const scenarioRows = bid
+    ? [
+        ['Conservative', valuation?.quickSaleEstimate ?? bid.expectedResaleValue, 1600, 3000, 3000, 5000],
+        ['Expected', bid.expectedResaleValue, 1300, bid.outboundShipping, bid.cleaningAllowance, bid.authenticationAllowance],
+        ['Optimistic', valuation?.optimisticResaleValue ?? bid.expectedResaleValue, 1100, bid.outboundShipping, 0, 0],
+      ].map(([name, resale, fee, shipping, cleaning, authentication]) => ({
+        name: String(name),
+        resale: Number(resale),
+        fee:Number(fee),shipping:Number(shipping),cleaning:Number(cleaning),authentication:Number(authentication),
+        result: calculateScenario({ resaleValueCents: Number(resale), purchasePriceCents: listing.currentBid, sellingFeeBasisPoints: Number(fee), shippingCents: Number(shipping), cleaningRepairCents: Number(cleaning), authenticationCents: Number(authentication), desiredProfitCents: bid.minimumRequiredProfit }),
+      }))
+    : [];
   return (
     <>
       <a className="muted" href="/">
@@ -103,6 +120,11 @@ export default async function Analysis({ params }: { params: { id: string } }) {
         ) : (
           <p>Valuation has not been calculated.</p>
         )}
+      </section>
+      <section className="card opps table-wrap">
+        <h2>Assumption scenarios</h2>
+        <p className="muted">Every scenario uses the same cent-based calculation utility; only assumptions change.</p>
+        {scenarioRows.length ? <table><thead><tr><th>Scenario</th><th>Resale value</th><th>Total cost</th><th>Profit</th><th>ROI</th><th>Maximum bid</th><th>Decision</th></tr></thead><tbody>{scenarioRows.map(x=><tr key={x.name}><td><b>{x.name}</b>{listing.scenarios.find(s=>s.name===x.name)?.isActive&&<span className="badge BUY">Active</span>}</td><td>{money(x.resale)}</td><td>{money(x.result.totalCostCents)}</td><td>{money(x.result.profitCents)}</td><td>{x.result.roiBasisPoints===null?'—':`${(x.result.roiBasisPoints/100).toFixed(1)}%`}</td><td>{money(x.result.maximumBidCents)}</td><td><form action={saveScenario}><input type="hidden" name="listingId" value={listing.id}/><input type="hidden" name="name" value={x.name}/><input type="hidden" name="resale" value={x.resale}/><input type="hidden" name="fee" value={x.fee}/><input type="hidden" name="shipping" value={x.shipping}/><input type="hidden" name="cleaning" value={x.cleaning}/><input type="hidden" name="authentication" value={x.authentication}/><input type="hidden" name="profit" value={bid?.minimumRequiredProfit??0}/><button className="button secondary">Save as active</button></form></td></tr>)}</tbody></table>:<p>Run valuation to compare scenarios.</p>}
       </section>
       <section className="card opps">
         <h2>Bid recommendation</h2>

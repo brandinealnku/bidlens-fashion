@@ -5,16 +5,16 @@ import {
   BarChart3,
   Search,
   Eye,
-  ShoppingBag,
-  Receipt,
   Settings,
+  Inbox,
+  PackageCheck,
 } from 'lucide-react';
 const nav = [
-  ['Dashboard', '/', BarChart3],
-  ['Analyze Listing', '/analyze', Search],
+  ['Opportunity Inbox', '/opportunities', Inbox],
+  ['Scanner', '/scanner', Search],
   ['Watchlist', '/watchlist', Eye],
-  ['Purchases', '/purchases', ShoppingBag],
-  ['Resales', '/resales', Receipt],
+  ['Inventory', '/inventory', PackageCheck],
+  ['Insights', '/insights', BarChart3],
   ['Settings', '/settings', Settings],
 ] as const;
 export default function Layout({ children }: { children: ReactNode }) {

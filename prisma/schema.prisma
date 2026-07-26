@@ -20,6 +20,11 @@ model UserProfile {
   outcomes AuctionOutcome[]
   resales ResaleOutcome[]
   alerts Alert[]
+  resellerProfile ResellerProfile?
+  decisionRules DecisionRule[]
+  inventory InventoryItem[]
+  scenarios SavedScenario[]
+  scannerBatches ScannerBatch[]
 }
 
 model UserSettings {
@@ -84,6 +89,10 @@ model AuctionListing {
   resales ResaleOutcome[]
   alerts Alert[]
   assumptions ListingFinancialAssumptions?
+  decision OpportunityDecision?
+  inventoryItem InventoryItem?
+  scenarios SavedScenario[]
+  scannerListing ScannerListing?
   @@index([userId,auctionEndAt])
 }
 
@@ -172,11 +181,17 @@ model Comparable {
   imageUrl String?
   marketplace String
   comparableStatus String
+  evidenceType String @default("DEMO_DATA")
   price Int
   shippingPrice Int
   currency String
   totalPrice Int
   condition String?
+  brand String?
+  model String?
+  category String?
+  authenticationStatus String?
+  inclusionStatus String @default("INCLUDED")
   size String?
   color String?
   material String?
@@ -257,10 +272,163 @@ model WatchlistItem {
   status String @default("ACTIVE")
   alertEnabled Boolean @default(true)
   userMaximumBid Int?
+  plannedBid Int?
+  priority String @default("MEDIUM")
+  decisionDeadline DateTime?
   notes String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   @@index([userId,status])
+}
+
+model ResellerProfile {
+  id String @id @default(cuid())
+  userId String @unique
+  user UserProfile @relation(fields:[userId], references:[id], onDelete:Cascade)
+  strategyName String @default("Balanced reseller")
+  minimumProfitCents Int @default(10000)
+  minimumRoiBasisPoints Int @default(3000)
+  maximumPurchasePriceCents Int @default(100000)
+  maximumRiskLevel String @default("MEDIUM")
+  preferredCategories String @default("[]")
+  preferredBrands String @default("[]")
+  excludedBrands String @default("[]")
+  preferredMarketplaces String @default("[\"eBay\"]")
+  defaultBuyerPremiumBasisPoints Int @default(1800)
+  defaultSalesTaxBasisPoints Int @default(750)
+  defaultSellingFeeBasisPoints Int @default(1300)
+  defaultPaymentFeeBasisPoints Int @default(300)
+  defaultInboundShippingCents Int @default(0)
+  defaultOutboundShippingCents Int @default(1800)
+  defaultAuthenticationCostCents Int @default(3500)
+  defaultCleaningAllowanceCents Int @default(2000)
+  preferredResaleMarketplace String @default("eBay")
+  targetHoldingPeriodDays Int @default(60)
+  accuracyToleranceBasisPoints Int @default(1500)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model OpportunityDecision {
+  id String @id @default(cuid())
+  auctionListingId String @unique
+  listing AuctionListing @relation(fields:[auctionListingId], references:[id], onDelete:Cascade)
+  status String @default("NEW")
+  marketOpportunityScore Int @default(0)
+  personalOpportunityScore Int @default(0)
+  positiveFactors String @default("[]")
+  negativeFactors String @default("[]")
+  recommendationReason String @default("")
+  recommendedNextAction String @default("Review opportunity")
+  updatedAt DateTime @updatedAt
+  @@index([status, personalOpportunityScore])
+}
+
+model DecisionRule {
+  id String @id @default(cuid())
+  userId String
+  user UserProfile @relation(fields:[userId], references:[id], onDelete:Cascade)
+  name String
+  enabled Boolean @default(true)
+  conditions String
+  action String
+  message String
+  priority Int @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([userId, enabled, priority])
+}
+
+model InventoryItem {
+  id String @id @default(cuid())
+  userId String
+  user UserProfile @relation(fields:[userId], references:[id], onDelete:Cascade)
+  auctionListingId String @unique
+  listing AuctionListing @relation(fields:[auctionListingId], references:[id], onDelete:Cascade)
+  status String @default("AWAITING_PAYMENT")
+  acquisitionDate DateTime?
+  purchasePriceCents Int @default(0)
+  buyerPremiumCents Int @default(0)
+  taxCents Int @default(0)
+  inboundShippingCents Int @default(0)
+  authenticationCostCents Int @default(0)
+  cleaningRepairCostCents Int @default(0)
+  otherAcquisitionCostsCents Int @default(0)
+  dateReceived DateTime?
+  conditionUponReceipt String?
+  authenticationResult String?
+  intendedResaleMarketplace String?
+  listingDate DateTime?
+  askingPriceCents Int?
+  acceptedOfferCents Int?
+  saleDate DateTime?
+  marketplaceFeeCents Int @default(0)
+  paymentFeeCents Int @default(0)
+  outboundShippingCents Int @default(0)
+  refundReturnCostsCents Int @default(0)
+  actualNetProceedsCents Int?
+  actualProfitCents Int?
+  actualRoiBasisPoints Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([userId, status])
+}
+
+model SavedScenario {
+  id String @id @default(cuid())
+  userId String
+  user UserProfile @relation(fields:[userId], references:[id], onDelete:Cascade)
+  auctionListingId String
+  listing AuctionListing @relation(fields:[auctionListingId], references:[id], onDelete:Cascade)
+  name String
+  resaleValueCents Int
+  sellingFeeBasisPoints Int
+  shippingCents Int
+  cleaningRepairCents Int
+  authenticationCents Int
+  desiredProfitCents Int
+  isActive Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([userId, auctionListingId, name])
+  @@index([userId, auctionListingId])
+}
+
+model ScannerBatch {
+  id String @id @default(cuid())
+  userId String
+  user UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name String
+  provider String
+  status String @default("IMPORTED")
+  totalCount Int @default(0)
+  analyzedCount Int @default(0)
+  failedCount Int @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  listings ScannerListing[]
+  @@index([userId, createdAt])
+}
+
+model ScannerListing {
+  id String @id @default(cuid())
+  scannerBatchId String
+  batch ScannerBatch @relation(fields: [scannerBatchId], references: [id], onDelete: Cascade)
+  auctionListingId String? @unique
+  listing AuctionListing? @relation(fields: [auctionListingId], references: [id], onDelete: SetNull)
+  rowNumber Int
+  sourceTitle String
+  sourceUrl String?
+  sourceMarketplace String
+  rawPayload String
+  status String @default("PENDING")
+  errorMessage String?
+  marketRankScore Int?
+  analyzedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([scannerBatchId, rowNumber])
+  @@index([scannerBatchId, status, marketRankScore])
 }
 
 model AuctionOutcome {

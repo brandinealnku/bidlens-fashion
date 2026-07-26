@@ -8,3 +8,6 @@ test-results
 coverage
 
 .data/
+
+prisma/*.db
+prisma/*.db-*
