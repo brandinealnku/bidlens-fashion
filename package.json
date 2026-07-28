@@ -4,17 +4,22 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --host 0.0.0.0",
+    "dev": "concurrently -k -s first -n API,WEB -c yellow,cyan \"npm:dev:api\" \"npm:dev:web\"",
+    "dev:api": "node server.mjs",
+    "dev:web": "vite --host 0.0.0.0",
     "demo": "vite --host 0.0.0.0 --open '/?demo=1'",
     "build": "tsc -b && vite build",
     "test": "vitest run",
     "test:watch": "vitest",
-    "start": "node server.mjs"
+    "start": "node server.mjs",
+    "preview": "vite preview --host 0.0.0.0",
+    "playwright:install": "playwright install chromium",
+    "playwright:install:with-deps": "playwright install --with-deps chromium"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
     "express": "latest",
-    "playwright": "latest",
+    "playwright": "1.54.1",
     "react": "latest",
     "react-dom": "latest",
     "vite": "latest"
@@ -24,7 +29,11 @@
     "@types/node": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
+    "concurrently": "latest",
     "typescript": "latest",
     "vitest": "latest"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

@@ -1,0 +1,7 @@
+{
+  "name": "BidLens Fashion",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm",
+  "postCreateCommand": "npm install && npm run playwright:install:with-deps",
+  "forwardPorts": [5173, 4174],
+  "portsAttributes": { "5173": { "label": "BidLens web" }, "4174": { "label": "Capture API" } }
+}
