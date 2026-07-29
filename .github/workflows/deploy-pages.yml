@@ -33,10 +33,10 @@ jobs:
         run: npm ci
 
       - name: Build application
-      env:
-        VITE_APPS_SCRIPT_API_URL: ${{ vars.VITE_APPS_SCRIPT_API_URL }}
-        VITE_BASE_PATH: /bidlens-fashion/
-      run: npm run build
+        env:
+          VITE_APPS_SCRIPT_API_URL: ${{ vars.VITE_APPS_SCRIPT_API_URL }}
+          VITE_BASE_PATH: /bidlens-fashion/
+        run: npm run build
 
       - name: Verify build
         run: |
