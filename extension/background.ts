@@ -110,7 +110,7 @@ async function run() {
       if (sessionId) {
         await api('saveProducts', { products: scrolled.listings.map((listing) => ({
           productId: listing.id, sessionId, title: listing.title || '', listingUrl: listing.listingUrl || '',
-          imageUrl: listing.imageUrl || '', currentBidCents: listing.currentBidCents || 0,
+          imageUrl: listing.imageUrl || '', bidText: listing.bidText || '', currentBidCents: listing.currentBidCents,
           timeRemaining: listing.timeRemaining || listing.endingText || '', brand: '', category: listing.categoryText || '',
           model: '', condition: 'Unknown', identificationConfidence: 0,
           extractionConfidence: listing.extractionConfidence, selected: true, userConfirmed: false,
