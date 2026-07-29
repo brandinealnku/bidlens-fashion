@@ -14,10 +14,11 @@
     "start": "node server.mjs",
     "preview": "vite preview --host 0.0.0.0",
     "playwright:install": "playwright install chromium",
-    "playwright:install:with-deps": "playwright install --with-deps chromium"
-    ,"extension:dev": "vite --config extension/vite.config.ts"
-    ,"extension:build": "vite build --config extension/vite.config.ts && vite build --config extension/vite.content.config.ts"
-    ,"extension:typecheck": "tsc -p extension/tsconfig.json --noEmit"
+    "playwright:install:with-deps": "playwright install --with-deps chromium",
+    "extension:build": "vite build --config extension/vite.config.ts && vite build --config extension/vite.content.config.ts",
+    "extension:typecheck": "tsc -p extension/tsconfig.json --noEmit",
+    "extension:watch": "concurrently -k \"vite build --watch --config extension/vite.config.ts\" \"vite build --watch --config extension/vite.content.config.ts\"",
+    "extension:zip": "npm run extension:build && rm -f bidlens-chrome-extension.zip && cd extension/dist && zip -qr ../../bidlens-chrome-extension.zip ."
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",

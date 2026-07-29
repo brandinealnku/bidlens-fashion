@@ -4,11 +4,20 @@ BidLens is a Vite/React analysis interface plus a separate Express/Playwright ca
 
 ## Chrome extension capture
 
-The Manifest V3 extension in `extension/` captures a public or already-authenticated EBTH tab only after the user clicks **Capture This EBTH Page**. It scrolls with bounded delays, extracts review-required listing cards, records ordered full-page screenshot segments, optionally creates a Google Sheets session, and uses an origin-checked, random one-time handoff to the React app. See [the extension guide](extension/README.md) for build, unpacked installation, configuration, permissions, privacy, troubleshooting, and honest screenshot/DOM limits.
+The Manifest V3 extension in `extension/` analyzes the active EBTH page only when the user clicks **Analyze Current Page**. It validates the exact EBTH hostname, extracts visible listing metadata, captures bounded screenshot sections, and opens the configured BidLens app with an origin-checked handoff. The app URL defaults to `https://brandinealnku.github.io/bidlens-fashion/` and can be changed under **BidLens settings**.
 
-Build it with `npm run extension:typecheck` and `npm run extension:build`, then load `extension/dist` from `chrome://extensions` in Developer mode. The extension options page stores one maintainable Apps Script URL. It never collects credentials, cookies, authentication tokens, full HTML, or unrelated tab/history data. Demo Mode and the existing server capture remain available when the extension or backend is unavailable.
+### Install in Chrome
 
-For Sheets, merge `apps-script/Code.gs` into the existing bound project: create/retain the backward-compatible `Captures` tab with the exact documented headers, add `saveCapture`/`getCapture` to the allowed action router, allow session mode `extension`, and redeploy. Screenshots intentionally stay local instead of being inserted into Sheets or made public.
+1. From the repository root, run `npm install` and then `npm run extension:build`.
+2. Open `chrome://extensions` in Chrome.
+3. Enable **Developer mode** in the upper-right corner.
+4. Click **Load unpacked**.
+5. Select the repository's `extension/dist` directory.
+6. Open an `https://ebth.com/*` or `https://www.ebth.com/*` page, click the BidLens extension, and choose **Analyze Current Page**.
+
+`npm run extension:watch` rebuilds during development. `npm run extension:zip` creates `bidlens-chrome-extension.zip` for distribution. The loadable build always includes `extension/dist/manifest.json`.
+
+The GitHub Pages app is static and does not run Node, Express, Playwright, or live API code. Extension extraction and the local handoff still work there. Optional Google Sheets synchronization requires a deployed Apps Script backend URL in the extension settings; if it is absent or unavailable, the extension honestly reports that the page was retained locally and that the backend must be running/configured for live synchronization. See [the extension guide](extension/README.md) for permissions, privacy, and troubleshooting.
 
 ## Local development (one command)
 
