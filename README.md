@@ -62,6 +62,8 @@ GitHub Pages cannot run Express, Node, Chromium, or Playwright. The canonical Pa
 
 Deploy the API independently on a browser-capable service such as Render, Railway, Fly.io, or Cloud Run, then build the frontend with `VITE_CAPTURE_ENABLED=true` and `VITE_CAPTURE_API_URL=https://capture-api.example.com`. Add the exact frontend origin to `ALLOWED_ORIGINS`. Never use `*`. `Dockerfile` uses the official Playwright runtime image; update its pinned tag together with the Playwright package version, build the frontend before the image, and expose `/api/health`. No backend is claimed to be deployed by this repository.
 
+Chromium is optional when the deployment only provides Gemini identification and comparable research. On a Gemini-only Render (or similar) service, set `GEMINI_API_KEY`, omit the Playwright browser-install step, and use `/api/health` as the platform health check. It returns `200` while reporting capture as unavailable. Configure `/api/capture/health` as a strict readiness check only on deployments that promise browser capture; that endpoint returns `BROWSER_UNAVAILABLE` when Chromium is absent. The identification and comparable-search endpoints do not launch or check Playwright.
+
 ## Environment variables
 
 | Variable | Default | Purpose |

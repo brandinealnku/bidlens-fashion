@@ -94,8 +94,12 @@ export async function capturePage(rawUrl, options={}) {
 function controlledCors(req,res,next) { const origin=req.get('origin'),allowed=new Set((process.env.ALLOWED_ORIGINS||'http://localhost:5173,http://127.0.0.1:5173').split(',').map(x=>x.trim()).filter(Boolean));if(origin&&!allowed.has(origin))return next(new CaptureError('UNSUPPORTED_DOMAIN','This browser origin is not allowed by the capture API.',403,'Add the trusted frontend origin to ALLOWED_ORIGINS.'));if(origin){res.set('Access-Control-Allow-Origin',origin);res.set('Vary','Origin');res.set('Access-Control-Allow-Methods','GET,POST,OPTIONS');res.set('Access-Control-Allow-Headers','Content-Type');}if(req.method==='OPTIONS')return res.sendStatus(204);next(); }
 export function createApp(deps={}) {
   const app=express(); app.disable('x-powered-by'); app.use(controlledCors); app.use(express.json({limit:'10mb'}));
-  app.get('/api/health',async(_req,res)=>res.json(await getServiceHealth(deps.health||checkBrowserAvailability,deps.env||process.env)));
-  app.get('/api/capture/health',async(_req,res,next)=>{try{res.json(await (deps.health||checkBrowserAvailability)());}catch(e){next(e);}});
+  // Browser readiness is capability metadata for the service-wide probe, but a
+  // hard requirement for the capture-specific probe. Keep the dependency named
+  // accordingly so research routes cannot accidentally acquire a browser gate.
+  const captureHealth=deps.captureHealth||deps.health||checkBrowserAvailability;
+  app.get('/api/health',async(_req,res)=>res.status(200).json(await getServiceHealth(captureHealth,deps.env||process.env)));
+  app.get('/api/capture/health',async(_req,res,next)=>{try{res.json(await captureHealth());}catch(e){next(e);}});
   app.post('/api/identify/product',async(req,res,next)=>{try{const provider=deps.identifyProvider||new GeminiVisualIdentificationProvider();res.json(await provider.identify(req.body||{}))}catch(e){next(e);}});
   app.post('/api/comparables/search',async(req,res,next)=>{try{const product=req.body||{};if(deps.searchComparables)return res.json(await deps.searchComparables(product));const visual=new GeminiVisualIdentificationProvider(),grounded=new GeminiGroundedComparableProvider();const identification=product.identification||await visual.identify(product);let vision;try{vision=await (deps.visionProvider||new GoogleVisionWebDetectionProvider()).detect(product)}catch(e){if(!(e instanceof ResearchProviderError)||e.code!=='PROVIDER_UNAVAILABLE')console.warn('[research]',{event:'vision-skipped',code:e?.code||'PROVIDER_ERROR'})}res.json({...await grounded.search(product,identification,vision),identification,vision})}catch(e){next(e);}});
   app.post('/api/capture',async(req,res,next)=>{try{console.info('[capture]',{event:'submitted',url:req.body?.url});res.json(await (deps.capture||capturePage)(req.body?.url));}catch(e){next(e);}});
