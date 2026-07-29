@@ -122,3 +122,11 @@ Valuation uses a weighted median. Verified sold evidence has base weight 1.00, u
 4. If the variable is absent, live research reports “Comparable research unavailable”; demo research, manual sold entry, locked values, heuristics, capture imports, and finance remain available.
 
 OAuth tokens are cached in server memory until shortly before expiration. Authentication and Browse requests have timeouts, transient 429/5xx responses retry with bounded backoff, and errors expose structured safe codes without secrets or raw upstream responses. Large base64 screenshots are neither sent to this endpoint nor persisted in Sheets.
+
+## Gemini visual research backend
+
+Live research uses the backend-only `GeminiVisualIdentificationProvider` with `gemini-2.5-flash`, followed by `GeminiGroundedComparableProvider` using the Gemini API `google_search` tool. Only the individual extension product crop and user-reviewed product metadata are submitted; the full-page screenshot is not part of either research request. Grounding URLs are retained with results, all results begin Pending, and only user-approved price-bearing evidence enters valuation. Asking prices remain labeled **Active asking price** and are never represented as sold.
+
+Set `GEMINI_API_KEY` on the Node service. Optionally set `GOOGLE_CLOUD_PROJECT` and `GOOGLE_APPLICATION_CREDENTIALS` (a service-account JSON file path) to run Cloud Vision Web Detection before grounding. Vision returns web entities, full/partial matches, pages with matching images, and best-guess labels; its failure is isolated and Gemini continues without it. `EBAY_CLIENT_ID`, `EBAY_CLIENT_SECRET`, and the existing eBay adapter remain optional for future use.
+
+Deploy by building this repository on a Node 20+ HTTPS service (`npm install`, `npm run build`, `npm start`), storing all Google credentials in its secret manager, and setting exact `ALLOWED_ORIGINS`. Build the browser app with only `VITE_COMPARABLE_API_URL=https://api.example.com`. Never put Google credentials in Vite variables, the extension, GitHub Pages, logs, or source control. Without Gemini configuration the API reports Provider unavailable while manual evidence, heuristic fallback, and Demo Mode continue to work.
