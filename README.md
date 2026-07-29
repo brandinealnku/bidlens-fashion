@@ -1,6 +1,14 @@
-# BidLens Fashion — URL-to-ROI MVP
+# BidLens Fashion v0.3 — Browser Capture and URL-to-ROI
 
 BidLens is a Vite/React analysis interface plus a separate Express/Playwright capture API. It analyzes a **user-submitted public EBTH page**; it never bids, purchases, bypasses access controls, or presents demo fixtures as live data.
+
+## Chrome extension capture
+
+The Manifest V3 extension in `extension/` captures a public or already-authenticated EBTH tab only after the user clicks **Capture This EBTH Page**. It scrolls with bounded delays, extracts review-required listing cards, records ordered full-page screenshot segments, optionally creates a Google Sheets session, and uses an origin-checked, random one-time handoff to the React app. See [the extension guide](extension/README.md) for build, unpacked installation, configuration, permissions, privacy, troubleshooting, and honest screenshot/DOM limits.
+
+Build it with `npm run extension:typecheck` and `npm run extension:build`, then load `extension/dist` from `chrome://extensions` in Developer mode. The extension options page stores one maintainable Apps Script URL. It never collects credentials, cookies, authentication tokens, full HTML, or unrelated tab/history data. Demo Mode and the existing server capture remain available when the extension or backend is unavailable.
+
+For Sheets, merge `apps-script/Code.gs` into the existing bound project: create/retain the backward-compatible `Captures` tab with the exact documented headers, add `saveCapture`/`getCapture` to the allowed action router, allow session mode `extension`, and redeploy. Screenshots intentionally stay local instead of being inserted into Sheets or made public.
 
 ## Local development (one command)
 

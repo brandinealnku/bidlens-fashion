@@ -1,0 +1,12 @@
+{
+  "manifest_version":3,
+  "name":"BidLens Fashion Capture",
+  "version":"0.3.0",
+  "description":"User-initiated capture of the active EBTH page for review in BidLens.",
+  "permissions":["activeTab","scripting","storage","unlimitedStorage","tabs"],
+  "host_permissions":["https://ebth.com/*","https://www.ebth.com/*","https://brandinealnku.github.io/bidlens-fashion/*"],
+  "background":{"service_worker":"background.js","type":"module"},
+  "action":{"default_popup":"popup.html","default_title":"Capture this EBTH page"},
+  "options_page":"options.html",
+  "content_security_policy":{"extension_pages":"script-src 'self'; object-src 'self'"}
+}

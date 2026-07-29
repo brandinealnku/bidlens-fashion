@@ -1,0 +1,2 @@
+export function scrollPositions(height:number,viewport:number,overlap=80,max=80){const step=Math.max(1,viewport-overlap),out:number[]=[];for(let y=0;y<height&&out.length<max;y+=step)out.push(Math.min(y,Math.max(0,height-viewport)));return [...new Set(out)]}
+export function segmentGroups(height:number,maxCanvasHeight=30000){const n=Math.max(1,Math.ceil(height/maxCanvasHeight));return Array.from({length:n},(_,i)=>({start:i*maxCanvasHeight,height:Math.min(maxCanvasHeight,height-i*maxCanvasHeight)}))}

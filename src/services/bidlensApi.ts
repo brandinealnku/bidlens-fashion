@@ -1,4 +1,4 @@
-export const BID_LENS_ACTIONS = ['health','createSession','getSession','listSessions','saveProducts','updateProduct','saveAssumptions','calculateResults','getRankedResults'] as const;
+export const BID_LENS_ACTIONS = ['health','createSession','getSession','listSessions','saveProducts','updateProduct','saveAssumptions','calculateResults','getRankedResults','saveCapture','getCapture'] as const;
 export type BidLensAction = typeof BID_LENS_ACTIONS[number];
 export type BidLensErrorCode = 'MISSING_API_URL'|'NETWORK_ERROR'|'EMPTY_RESPONSE'|'INVALID_JSON'|'API_ERROR';
 

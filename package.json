@@ -15,6 +15,9 @@
     "preview": "vite preview --host 0.0.0.0",
     "playwright:install": "playwright install chromium",
     "playwright:install:with-deps": "playwright install --with-deps chromium"
+    ,"extension:dev": "vite --config extension/vite.config.ts"
+    ,"extension:build": "vite build --config extension/vite.config.ts && vite build --config extension/vite.content.config.ts"
+    ,"extension:typecheck": "tsc -p extension/tsconfig.json --noEmit"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
