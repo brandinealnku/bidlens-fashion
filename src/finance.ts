@@ -1,9 +1,10 @@
 import type {Assumptions,FinanceResult} from './types';
 export const percent=(cents:number,bps:number)=>Math.round(cents*bps/10000);
 export function calculateFinance(a:Assumptions):FinanceResult{
- const buyerPremiumCents=percent(a.currentBidCents,a.buyerPremiumBps);
- const salesTaxCents=percent(a.currentBidCents+buyerPremiumCents,a.salesTaxBps);
- const acquisitionCents=a.currentBidCents+buyerPremiumCents+salesTaxCents+a.inboundShippingCents+a.otherAcquisitionCents;
+ const currentBidCents=a.currentBidCents??0;
+ const buyerPremiumCents=percent(currentBidCents,a.buyerPremiumBps);
+ const salesTaxCents=percent(currentBidCents+buyerPremiumCents,a.salesTaxBps);
+ const acquisitionCents=currentBidCents+buyerPremiumCents+salesTaxCents+a.inboundShippingCents+a.otherAcquisitionCents;
  const marketplaceFeeCents=percent(a.expectedResaleCents,a.marketplaceFeeBps);
  const processingFeeCents=percent(a.expectedResaleCents,a.processingFeeBps);
  const netProceedsCents=a.expectedResaleCents-marketplaceFeeCents-processingFeeCents-a.outboundShippingCents-a.packagingCents;
