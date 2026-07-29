@@ -4,6 +4,7 @@ import dns from 'node:dns/promises';
 import net from 'node:net';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { searchEbayComparables, EbayProviderError } from './ebay-provider.mjs';
 
 export class CaptureError extends Error {
   constructor(code, message, status, guidance) { super(message); this.code = code; this.status = status; this.guidance = guidance; }
@@ -77,9 +78,10 @@ function controlledCors(req,res,next) { const origin=req.get('origin'),allowed=n
 export function createApp(deps={}) {
   const app=express(); app.disable('x-powered-by'); app.use(controlledCors); app.use(express.json({limit:'8kb'}));
   app.get('/api/health',async(_req,res,next)=>{try{res.json(await (deps.health||checkBrowserAvailability)());}catch(e){next(e);}});
+  app.post('/api/comparables/search',async(req,res,next)=>{try{const product=req.body||{};const result=await (deps.searchComparables||searchEbayComparables)(product);res.json(result)}catch(e){next(e);}});
   app.post('/api/capture',async(req,res,next)=>{try{console.info('[capture]',{event:'submitted',url:req.body?.url});res.json(await (deps.capture||capturePage)(req.body?.url));}catch(e){next(e);}});
   app.use(express.static('dist')); app.get(/^(?!\/api\/).*/,(_req,res)=>res.sendFile(path.resolve('dist/index.html')));
-  app.use((error,_req,res,_next)=>{const e=normalizeCaptureError(error);res.status(e.status).json({error:e.message,code:e.code,...(e.guidance&&{guidance:e.guidance})});}); return app;
+  app.use((error,_req,res,_next)=>{if(error instanceof EbayProviderError)return res.status(error.status).json({error:error.message,code:error.code,retryable:error.retryable});const e=normalizeCaptureError(error);res.status(e.status).json({error:e.message,code:e.code,...(e.guidance&&{guidance:e.guidance})});}); return app;
 }
 export function startServer(port=Number(process.env.PORT)||4174) { const server=createApp().listen(port,()=>console.info(`[api] Capture API listening on http://localhost:${port}`));server.on('error',e=>{console.error(`[api] Unable to listen on port ${port}: ${e.message}`);process.exitCode=1;});return server; }
 if(process.argv[1]===fileURLToPath(import.meta.url)) startServer();

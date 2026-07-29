@@ -103,3 +103,22 @@ Logs include submitted URL, validated hostname, navigation/final URL and status,
 ## Analysis limitations
 
 Identification and comparable evidence are tentative; demo comparables are explicitly labeled MOCK. Fees, tax, shipping, condition, authenticity, page structure, and market demand can change results. Estimates and ranking labels are not guarantees.
+
+## Evidence-based comparable research
+
+BidLens now stores comparable evidence independently for every captured product. The browser uses `VITE_COMPARABLE_API_URL` to call `POST /api/comparables/search`; the separately deployed Express backend obtains an eBay OAuth application token and calls the official Buy Browse API. eBay Browse results are **active asking prices**, never sold history. Client secrets stay exclusively on the backend. Demo and manual providers keep static deployments functional, while `future-sold-provider` reserves an adapter point for authorized verified sold data.
+
+Search creates up to three concise product queries (brand/model/type, brand/distinctive title terms, and category/material/color), removes EBTH and auction noise, merges duplicate item IDs, and optionally requests product-image research. The current eBay backend deliberately skips image search unless a suitable product-image URL implementation is configured; keyword search succeeds independently and the UI explains that visual similarity cannot establish identity.
+
+Match scoring is deterministic: brand 25, model 25, type 15, material 10, color 5, condition 5, title-token similarity 10, and image-search support 5. Replica, inspired, faux, damage/parts, empty packaging, bundle/lot, and different-model terms apply explicit penalties. Only approved records scoring at least 40 enter valuation.
+
+Valuation uses a weighted median. Verified sold evidence has base weight 1.00, user-entered sold evidence 0.85, strong active evidence 0.50, moderate active evidence 0.30, and retail/heuristic reference evidence 0.15; each is multiplied by match score / 100. Active totals are first adjusted by the editable conservative/expected/optimistic realization factors (65%/75%/90% defaults). Median absolute deviation flags and excludes extreme prices from calculation without removing them from review. Missing condition, high shipping, mismatch warnings, and single-record evidence remain visible. Locked user estimates are preserved; otherwise approved evidence takes priority and the product heuristic is the honest fallback.
+
+### Comparable backend deployment
+
+1. Deploy this repository to a Node 20+ HTTPS service (Cloud Run, Fly.io, Render, or Railway) and run `npm install`, `npm run build`, then `npm start`.
+2. Set `EBAY_CLIENT_ID`, `EBAY_CLIENT_SECRET`, and optionally `EBAY_MARKETPLACE_ID=EBAY_US` only on that service. Set `ALLOWED_ORIGINS` to the exact Pages/frontend origin.
+3. Build the static frontend with `VITE_COMPARABLE_API_URL=https://your-api.example.com` and the existing capture variables. This value is public and contains no credential.
+4. If the variable is absent, live research reports “Comparable research unavailable”; demo research, manual sold entry, locked values, heuristics, capture imports, and finance remain available.
+
+OAuth tokens are cached in server memory until shortly before expiration. Authentication and Browse requests have timeouts, transient 429/5xx responses retry with bounded backoff, and errors expose structured safe codes without secrets or raw upstream responses. Large base64 screenshots are neither sent to this endpoint nor persisted in Sheets.
