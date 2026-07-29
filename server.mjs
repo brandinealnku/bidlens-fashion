@@ -5,6 +5,7 @@ import net from 'node:net';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { searchEbayComparables, EbayProviderError } from './ebay-provider.mjs';
+import { GeminiVisualIdentificationProvider, GeminiGroundedComparableProvider, GoogleVisionWebDetectionProvider, ResearchProviderError } from './gemini-provider.mjs';
 
 export class CaptureError extends Error {
   constructor(code, message, status, guidance) { super(message); this.code = code; this.status = status; this.guidance = guidance; }
@@ -76,12 +77,13 @@ export async function capturePage(rawUrl, options={}) {
 }
 function controlledCors(req,res,next) { const origin=req.get('origin'),allowed=new Set((process.env.ALLOWED_ORIGINS||'http://localhost:5173,http://127.0.0.1:5173').split(',').map(x=>x.trim()).filter(Boolean));if(origin&&!allowed.has(origin))return next(new CaptureError('UNSUPPORTED_DOMAIN','This browser origin is not allowed by the capture API.',403,'Add the trusted frontend origin to ALLOWED_ORIGINS.'));if(origin){res.set('Access-Control-Allow-Origin',origin);res.set('Vary','Origin');res.set('Access-Control-Allow-Methods','GET,POST,OPTIONS');res.set('Access-Control-Allow-Headers','Content-Type');}if(req.method==='OPTIONS')return res.sendStatus(204);next(); }
 export function createApp(deps={}) {
-  const app=express(); app.disable('x-powered-by'); app.use(controlledCors); app.use(express.json({limit:'8kb'}));
+  const app=express(); app.disable('x-powered-by'); app.use(controlledCors); app.use(express.json({limit:'10mb'}));
   app.get('/api/health',async(_req,res,next)=>{try{res.json(await (deps.health||checkBrowserAvailability)());}catch(e){next(e);}});
-  app.post('/api/comparables/search',async(req,res,next)=>{try{const product=req.body||{};const result=await (deps.searchComparables||searchEbayComparables)(product);res.json(result)}catch(e){next(e);}});
+  app.post('/api/identify/product',async(req,res,next)=>{try{const provider=deps.identifyProvider||new GeminiVisualIdentificationProvider();res.json(await provider.identify(req.body||{}))}catch(e){next(e);}});
+  app.post('/api/comparables/search',async(req,res,next)=>{try{const product=req.body||{};if(deps.searchComparables)return res.json(await deps.searchComparables(product));const visual=new GeminiVisualIdentificationProvider(),grounded=new GeminiGroundedComparableProvider();const identification=product.identification||await visual.identify(product);let vision;try{vision=await (deps.visionProvider||new GoogleVisionWebDetectionProvider()).detect(product)}catch(e){if(!(e instanceof ResearchProviderError)||e.code!=='PROVIDER_UNAVAILABLE')console.warn('[research]',{event:'vision-skipped',code:e?.code||'PROVIDER_ERROR'})}res.json({...await grounded.search(product,identification,vision),identification,vision})}catch(e){next(e);}});
   app.post('/api/capture',async(req,res,next)=>{try{console.info('[capture]',{event:'submitted',url:req.body?.url});res.json(await (deps.capture||capturePage)(req.body?.url));}catch(e){next(e);}});
   app.use(express.static('dist')); app.get(/^(?!\/api\/).*/,(_req,res)=>res.sendFile(path.resolve('dist/index.html')));
-  app.use((error,_req,res,_next)=>{if(error instanceof EbayProviderError)return res.status(error.status).json({error:error.message,code:error.code,retryable:error.retryable});const e=normalizeCaptureError(error);res.status(e.status).json({error:e.message,code:e.code,...(e.guidance&&{guidance:e.guidance})});}); return app;
+  app.use((error,_req,res,_next)=>{if(error instanceof EbayProviderError||error instanceof ResearchProviderError)return res.status(error.status).json({error:error.message,code:error.code,retryable:error.retryable});const e=normalizeCaptureError(error);res.status(e.status).json({error:e.message,code:e.code,...(e.guidance&&{guidance:e.guidance})});}); return app;
 }
 export function startServer(port=Number(process.env.PORT)||4174) { const server=createApp().listen(port,()=>console.info(`[api] Capture API listening on http://localhost:${port}`));server.on('error',e=>{console.error(`[api] Unable to listen on port ${port}: ${e.message}`);process.exitCode=1;});return server; }
 if(process.argv[1]===fileURLToPath(import.meta.url)) startServer();

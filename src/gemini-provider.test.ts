@@ -1,0 +1,11 @@
+import{describe,expect,it}from'vitest';
+import{GeminiGroundedComparableProvider,GeminiVisualIdentificationProvider,normalizeProductInput,parseVisiblePrice,validateGroundedComparables,validateIdentification}from'../gemini-provider.mjs';
+const image='data:image/jpeg;base64,AA==';
+describe('Gemini research providers',()=>{
+ it('normalizes only the product image and contextual title',()=>expect(normalizeProductInput({productId:'x',title:'  Bag  ',imageDataOrUrl:image})).toMatchObject({id:'x',title:'Bag',imageDataOrUrl:image}));
+ it('validates identification JSON defensively',()=>expect(validateIdentification({brand:7,material:'leather',identificationConfidence:999,searchQueries:[' query ']})).toMatchObject({brand:'',material:[],identificationConfidence:100,searchQueries:['query']}));
+ it('parses only explicit visible dollar prices into integer cents',()=>{expect(parseVisiblePrice('$1,234.50')).toBe(123450);expect(parseVisiblePrice('contact seller')).toBeUndefined()});
+ it('preserves grounding citations and does not invent missing prices or sold status',()=>{const r=validateGroundedComparables({comparables:[{title:'Bag',url:'https://shop.test/bag',evidenceType:'sold-listing'}]},[{url:'https://google.test/citation',title:'Citation'}]);expect(r.citations).toHaveLength(1);expect(r.comparables[0].itemPriceCents).toBeUndefined();expect(r.comparables[0].evidenceType).toBe('active-listing')});
+ it('keeps products independent across requests',async()=>{const calls:any[]=[];const fetchImpl=async(_u:any,o:any)=>{calls.push(JSON.parse(o.body));return new Response(JSON.stringify({candidates:[{content:{parts:[{text:'{"comparables":[],"queriesUsed":[]}'}]},groundingMetadata:{groundingChunks:[]}}]}))};const p=new GeminiGroundedComparableProvider({apiKey:'test',fetchImpl});await Promise.all([p.search({id:'a',title:'Alpha'},{}),p.search({id:'b',title:'Beta'}, {})]);expect(JSON.stringify(calls[0])).toContain('Alpha');expect(JSON.stringify(calls[0])).not.toContain('Beta')});
+ it('reports unavailable without a Gemini secret',async()=>await expect(new GeminiVisualIdentificationProvider({apiKey:''}).identify({imageDataOrUrl:image})).rejects.toMatchObject({code:'PROVIDER_UNAVAILABLE'}));
+});
