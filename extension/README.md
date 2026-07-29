@@ -41,3 +41,9 @@ Captured: source URL/title, dimensions, detected item links/title/image/bid/end-
 - Very tall pages remain ordered screenshot segments. Browser bitmap/message/storage limits can still cause partial evidence; structured extraction remains usable.
 - Sticky elements are hidden best-effort and restored. Layout/CSS changes may require manual selector validation.
 - Public and authenticated EBTH behavior must be manually validated in Chrome with an authorized user session. Unit fixtures do not claim authenticated testing.
+
+### Screenshot capture throttling
+
+Chrome permits only a small number of `captureVisibleTab` calls per second. BidLens serializes all viewport screenshots, waits at least 750 ms after every attempted capture, and waits 1,100 ms before one retry if Chrome reports its capture quota. Keep the BidLens popup open to see progress such as **Capturing page section 3 of 8…**. Repeated **Analyze Current Page** requests are rejected while a capture is active.
+
+If Chrome temporarily limits capture, BidLens keeps any completed page sections and reports a friendly warning rather than the browser's raw quota error. Canceling or encountering an unrecoverable error still restores the page's original scroll position and sticky elements. If quota warnings persist, wait a few seconds before starting another capture and avoid other extensions that take rapid screenshots.
