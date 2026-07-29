@@ -10,7 +10,7 @@ npm run extension:typecheck
 npm run extension:build
 ```
 
-Open `chrome://extensions`, enable **Developer mode**, choose **Load unpacked**, and select the repository's `extension/dist` directory. Open **Details → Extension options** and set the HTTPS Apps Script web-app URL. The BidLens URL defaults to the deployed GitHub Pages app. The API field is masked after entry.
+Open `chrome://extensions`, enable **Developer mode**, click **Load unpacked**, and select the repository's `extension/dist` directory. Open **Details → Extension options** and set the HTTPS Apps Script web-app URL. The BidLens URL defaults to the deployed GitHub Pages app. The API field is masked after entry.
 
 ## Capture a page
 
@@ -19,7 +19,7 @@ Open `chrome://extensions`, enable **Developer mode**, choose **Load unpacked**,
 3. The extension scrolls conservatively (500–1,000 ms, at most 80 attempts), waits briefly for images, extracts only candidate card text, captures ordered viewport screenshots, and restores the original scroll position/fixed elements.
 4. Choose **Open in BidLens**. A random one-time token binds an origin-checked `postMessage` handoff. The payload is deleted from extension storage after delivery. Products begin unconfirmed and editable.
 
-If configured, the extension calls Apps Script with `text/plain;charset=utf-8` to create an `extension` session, save products, and save capture metadata. Screenshots remain in temporary extension storage—not Sheets or public URLs. A backend failure retains the local capture.
+If configured, the extension calls Apps Script with `text/plain;charset=utf-8` to create an `extension` session, save products, and save capture metadata. Screenshots remain in temporary extension storage—not Sheets or public URLs. A backend failure retains the local capture and the popup reports the limitation honestly; live synchronization requires the configured backend to be running.
 
 ## Permissions
 
