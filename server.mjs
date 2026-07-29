@@ -45,6 +45,22 @@ export async function checkBrowserAvailability(chromiumImpl=chromium) {
   try { await fs.access(executable); return {status:'ok',service:'bidlens-capture-api',playwright:'available',browser:'chromium',timestamp:new Date().toISOString()}; }
   catch { fail('BROWSER_UNAVAILABLE','Chromium is not installed.','Run npm run playwright:install in the development environment.'); }
 }
+export async function getServiceHealth(browserHealth=checkBrowserAvailability, env=process.env) {
+  let captureAvailable=true;
+  try { await browserHealth(); } catch { captureAvailable=false; }
+  const geminiAvailable=Boolean(env.GEMINI_API_KEY);
+  const googleVisionAvailable=Boolean(env.GOOGLE_CLOUD_PROJECT&&env.GOOGLE_APPLICATION_CREDENTIALS);
+  return {
+    status:'ok',
+    service:'bidlens-api',
+    timestamp:new Date().toISOString(),
+    capabilities:{
+      geminiComparables:{available:geminiAvailable,reason:geminiAvailable?'configured':'GEMINI_API_KEY is not configured'},
+      capture:{available:captureAvailable,reason:captureAvailable?'Chromium available':'Chromium is not installed'},
+      googleVision:{available:googleVisionAvailable,reason:googleVisionAvailable?'configured':'not configured'},
+    },
+  };
+}
 async function detectChallenge(page) {
   const sample=(await page.locator('body').innerText({timeout:3000}).catch(()=>'' )).slice(0,20000).toLowerCase();
   if (/captcha|verify you are human|challenge-platform/.test(sample)) fail('CAPTCHA_CHALLENGE');
@@ -78,7 +94,8 @@ export async function capturePage(rawUrl, options={}) {
 function controlledCors(req,res,next) { const origin=req.get('origin'),allowed=new Set((process.env.ALLOWED_ORIGINS||'http://localhost:5173,http://127.0.0.1:5173').split(',').map(x=>x.trim()).filter(Boolean));if(origin&&!allowed.has(origin))return next(new CaptureError('UNSUPPORTED_DOMAIN','This browser origin is not allowed by the capture API.',403,'Add the trusted frontend origin to ALLOWED_ORIGINS.'));if(origin){res.set('Access-Control-Allow-Origin',origin);res.set('Vary','Origin');res.set('Access-Control-Allow-Methods','GET,POST,OPTIONS');res.set('Access-Control-Allow-Headers','Content-Type');}if(req.method==='OPTIONS')return res.sendStatus(204);next(); }
 export function createApp(deps={}) {
   const app=express(); app.disable('x-powered-by'); app.use(controlledCors); app.use(express.json({limit:'10mb'}));
-  app.get('/api/health',async(_req,res,next)=>{try{res.json(await (deps.health||checkBrowserAvailability)());}catch(e){next(e);}});
+  app.get('/api/health',async(_req,res)=>res.json(await getServiceHealth(deps.health||checkBrowserAvailability,deps.env||process.env)));
+  app.get('/api/capture/health',async(_req,res,next)=>{try{res.json(await (deps.health||checkBrowserAvailability)());}catch(e){next(e);}});
   app.post('/api/identify/product',async(req,res,next)=>{try{const provider=deps.identifyProvider||new GeminiVisualIdentificationProvider();res.json(await provider.identify(req.body||{}))}catch(e){next(e);}});
   app.post('/api/comparables/search',async(req,res,next)=>{try{const product=req.body||{};if(deps.searchComparables)return res.json(await deps.searchComparables(product));const visual=new GeminiVisualIdentificationProvider(),grounded=new GeminiGroundedComparableProvider();const identification=product.identification||await visual.identify(product);let vision;try{vision=await (deps.visionProvider||new GoogleVisionWebDetectionProvider()).detect(product)}catch(e){if(!(e instanceof ResearchProviderError)||e.code!=='PROVIDER_UNAVAILABLE')console.warn('[research]',{event:'vision-skipped',code:e?.code||'PROVIDER_ERROR'})}res.json({...await grounded.search(product,identification,vision),identification,vision})}catch(e){next(e);}});
   app.post('/api/capture',async(req,res,next)=>{try{console.info('[capture]',{event:'submitted',url:req.body?.url});res.json(await (deps.capture||capturePage)(req.body?.url));}catch(e){next(e);}});

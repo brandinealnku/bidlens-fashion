@@ -32,7 +32,7 @@ npm run dev
 
 `npm run dev` starts the API at `http://localhost:4174` and Vite at `http://localhost:5173`, with readable `API`/`WEB` prefixes. Vite proxies `/api` to the API. `concurrently -k -s first` stops both processes on Ctrl-C or if either exits. Port conflicts are printed by the owning service. Demo Mode works without network or Chromium.
 
-Check readiness at <http://localhost:4174/api/health>. The lightweight check confirms that Playwright's Chromium executable exists; it does not launch a persistent browser.
+Check API readiness and configured capabilities at <http://localhost:4174/api/health>. This endpoint remains healthy when optional capabilities are unavailable. Check capture readiness separately at <http://localhost:4174/api/capture/health>; the capture-specific check confirms that Playwright's Chromium executable exists without launching a persistent browser.
 
 ## Commands
 

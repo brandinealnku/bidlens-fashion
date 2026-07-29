@@ -34,4 +34,4 @@ export async function captureAuction(url: string, signal?: AbortSignal) {
   if (!getCaptureConfig().liveCaptureEnabled) throw new CaptureApiError('Live page capture is unavailable in this static deployment.', 'API_UNAVAILABLE', undefined, 'Use Demo Mode or connect a capture API.');
   return request<{capture: PageCaptureResult; products: DetectedProduct[]; warnings?: unknown[]}>('/api/capture', { method: 'POST', headers: {'content-type':'application/json'}, body: JSON.stringify({url}), signal });
 }
-export const checkCaptureHealth = () => request<{status:string;playwright:string}>('/api/health');
+export const checkCaptureHealth = () => request<{status:string;playwright:string}>('/api/capture/health');
