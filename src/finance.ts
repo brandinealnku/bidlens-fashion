@@ -18,7 +18,7 @@ export function calculateFinance(a:Assumptions):FinanceResult{
  let maximumBidCents:null|number=null;
  if(netForGoal>=0){
    if(a.maxBidMode==='profit') maximumBidCents=Math.max(0,Math.floor(((netForGoal-fixedBuy)*100000000)/(premiumMultiplier*taxMultiplier)));
-   else { const roi=10000+a.desiredRoiBps; maximumBidCents=Math.max(0,Math.floor(((netProceedsCents-roi*fixedBuy/10000)*100000000)/(roi*premiumMultiplier*taxMultiplier))); }
+   else { const roi=10000+a.desiredRoiBps; maximumBidCents=Math.max(0,Math.floor((((netProceedsCents*10000)-roi*fixedBuy)*100000000)/(roi*premiumMultiplier*taxMultiplier))); }
  }
  return{buyerPremiumCents,salesTaxCents,acquisitionCents,marketplaceFeeCents,processingFeeCents,netProceedsCents,profitCents,roiBps,breakEvenResaleCents,maximumBidCents};
 }
