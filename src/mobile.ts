@@ -1,7 +1,7 @@
 export type EvidenceType='active'|'sold'|'retail';
 export type MatchQuality='exact'|'strong'|'similar'|'weak';
 export type Comparable={id:string;priceCents:number;shippingCents:number;marketplace:string;evidenceType:EvidenceType;condition:string;matchQuality:MatchQuality;url?:string;notes?:string;excluded?:boolean;includeSimilar?:boolean;demo?:boolean};
-export type Item={id:string;name:string;image?:string;originalImage?:string;currentBidCents:number;shippingCents:number;premiumBps:number;taxBps:number;condition:string;notes:string;otherAcquisitionCents:number;comparables:Comparable[];assumptions:Assumptions;updatedAt:string};
+export type Item={id:string;name:string;brand?:string;category?:string;bidCount?:number;image?:string;originalImage?:string;ocrResult?:import('./ocr/types').OcrResult;currentBidCents:number;shippingCents:number;premiumBps:number;taxBps:number;condition:string;notes:string;otherAcquisitionCents:number;comparables:Comparable[];assumptions:Assumptions;updatedAt:string};
 export type Assumptions={activeConservativeBps:number;activeExpectedBps:number;activeOptimisticBps:number;retailDiscountBps:number;marketplaceFeeBps:number;processingFeeBps:number;outboundShippingCents:number;packagingCents:number;otherSellingCents:number;minimumProfitCents:number;minimumRoiBps:number};
 export const defaultAssumptions:Assumptions={activeConservativeBps:6500,activeExpectedBps:7500,activeOptimisticBps:9000,retailDiscountBps:5000,marketplaceFeeBps:1500,processingFeeBps:300,outboundShippingCents:1200,packagingCents:200,otherSellingCents:0,minimumProfitCents:2500,minimumRoiBps:3000};
 const mul=(n:number,bps:number)=>Math.round(n*bps/10000);

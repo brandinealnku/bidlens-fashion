@@ -1,0 +1,11 @@
+[
+  {"text":"Everything But The House","confidence":98,"boundingBox":{"x":20,"y":30,"width":330,"height":20}},
+  {"text":"Tory Burch Perry Triple","confidence":94,"boundingBox":{"x":25,"y":300,"width":360,"height":42}},
+  {"text":"Compartment Tote Handbag","confidence":92,"boundingBox":{"x":25,"y":348,"width":360,"height":40}},
+  {"text":"Current Bid","confidence":97,"boundingBox":{"x":25,"y":700,"width":150,"height":30}},
+  {"text":"$1,250.50","confidence":96,"boundingBox":{"x":25,"y":742,"width":170,"height":38}},
+  {"text":"9 Bids","confidence":95,"boundingBox":{"x":230,"y":748,"width":90,"height":28}},
+  {"text":"Estimated Shipping","confidence":93,"boundingBox":{"x":25,"y":840,"width":200,"height":25}},
+  {"text":"$18.95","confidence":94,"boundingBox":{"x":25,"y":875,"width":100,"height":30}},
+  {"text":"Pre-owned","confidence":91,"boundingBox":{"x":25,"y":940,"width":120,"height":25}}
+]

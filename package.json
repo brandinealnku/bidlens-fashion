@@ -26,7 +26,8 @@
     "playwright": "1.54.1",
     "react": "latest",
     "react-dom": "latest",
-    "vite": "latest"
+    "vite": "latest",
+    "tesseract.js": "^6.0.1"
   },
   "devDependencies": {
     "@types/express": "latest",
