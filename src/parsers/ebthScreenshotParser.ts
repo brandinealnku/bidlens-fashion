@@ -1,0 +1,16 @@
+import{findFashionBrand}from'../data/fashionBrands';import type{OcrLine,OcrResult}from'../ocr/types';
+const excluded=/^(everything but the house|ebth|current bid|winning bid|starting bid|\d+ bids?|sign in|search|shipping|estimated shipping|pickup|ends?|favorite|share|lot(?:\s+\S+)?|description|details)$/i;
+const money=/\$\s*([0-9]{1,3}(?:,[0-9]{3})*|[0-9]+)(?:\.([0-9]{1,2}))?/;
+const cents=(match:RegExpMatchArray)=>Number(match[1].replace(/,/g,''))*100+Number((match[2]||'').padEnd(2,'0'));
+const center=(line:OcrLine)=>({x:line.boundingBox.x+line.boundingBox.width/2,y:line.boundingBox.y+line.boundingBox.height/2});
+function nearbyMoney(lines:OcrLine[],label:RegExp){let best:{value:number;score:number}|undefined;for(const line of lines){if(!label.test(line.text))continue;const a=center(line);for(const candidate of lines){const match=candidate.text.match(money);if(!match||/\b\d+\s+bids?\b/i.test(candidate.text))continue;const b=center(candidate),dx=Math.abs(b.x-a.x),dy=b.y-a.y;if(dy < -20||dy>220||dx>700)continue;const score=Math.max(0,1-(Math.abs(dy)+dx*.25)/500)*(candidate.confidence/100);if(!best||score>best.score)best={value:cents(match),score};}}return best}
+export function parseEbthScreenshot(lines:OcrLine[],imageHeight?:number):OcrResult{
+ const rawText=lines.map(x=>x.text).join('\n'),bid=nearbyMoney(lines,/\b(current bid|winning bid|starting bid|bid)\b/i),shipping=nearbyMoney(lines,/\b(shipping|estimated shipping|delivery|freight)\b/i);
+ const bidMatch=rawText.match(/\b(\d+)\s+bids?\b/i),bidLine=bidMatch&&lines.find(x=>new RegExp(`\\b${bidMatch[1]}\\s+bids?\\b`,'i').test(x.text));
+ const maxY=imageHeight??Math.max(...lines.map(x=>x.boundingBox.y+x.boundingBox.height),1),candidates=lines.filter(x=>{const t=x.text.trim();return t.split(/\s+/).length>=2&&t.length>=7&&!excluded.test(t)&&!money.test(t)&&!/(shipping|pickup|ends?\s|\d+\s+bids?|www\.|battery|carrier)/i.test(t)&&x.boundingBox.y<maxY*.55});
+ const ranked=candidates.map((x,i)=>({line:x,i,score:(1-x.boundingBox.y/maxY)*.35+Math.min(x.boundingBox.height/55,.35)+Math.min(x.text.split(/\s+/).length/10,.2)+x.confidence/100*.1})).sort((a,b)=>b.score-a.score);
+ let title=ranked[0]?.line.text.trim(),titleConfidence=ranked[0]?.score??0;
+ if(ranked[0]){const first=ranked[0].line;const continuation=candidates.find(x=>x!==first&&Math.abs(x.boundingBox.y-(first.boundingBox.y+first.boundingBox.height))<Math.max(35,first.boundingBox.height*1.4)&&Math.abs(x.boundingBox.x-first.boundingBox.x)<100);if(continuation){title=[first,continuation].sort((a,b)=>a.boundingBox.y-b.boundingBox.y).map(x=>x.text.trim()).join(' ');titleConfidence=Math.min(1,titleConfidence+.08)}}
+ const brand=findFashionBrand(title||'')||findFashionBrand(rawText);const condition=rawText.match(/\b(new with tags|pre-owned|excellent|good|fair)\b/i)?.[1];const category=rawText.match(/\b(handbag|tote|shoes?|jewelry|clothing)\b/i)?.[1];
+ return{rawText,lines,parsed:{brand,title,currentBidCents:bid?.value,bidCount:bidMatch?Number(bidMatch[1]):undefined,shippingCents:shipping?.value,condition,category},confidence:{brand:brand?(title&&findFashionBrand(title)?Math.min(1,titleConfidence):.7):0,title:Math.min(1,titleConfidence),currentBid:bid?.score??0,bidCount:bidLine?bidLine.confidence/100:0,shipping:shipping?.score??0}};
+}

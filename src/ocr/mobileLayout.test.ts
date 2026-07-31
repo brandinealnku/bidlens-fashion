@@ -1,0 +1,2 @@
+import{describe,expect,it}from'vitest';import{readFileSync}from'node:fs';
+describe('Safari mobile layout',()=>{const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');it('uses Safari-safe inputs and touch targets',()=>{expect(css).toMatch(/font-size:16px;min-height:44px/);expect(css).toMatch(/overflow-x:hidden/);expect(css).toMatch(/max-width:100%/)});it('keeps OCR progress and review responsive',()=>{expect(css).toContain('.ocr-progress');expect(css).toContain('@media(max-width:420px)')})});
