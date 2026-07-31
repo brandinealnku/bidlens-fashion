@@ -5,3 +5,10 @@ dist/
 extension/dist/
 
 bidlens-chrome-extension.zip
+
+# Generated build and test outputs
+build/
+extension-dist/
+coverage/
+*.zip
+*.shortcut

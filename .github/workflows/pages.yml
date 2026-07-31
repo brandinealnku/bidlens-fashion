@@ -16,6 +16,7 @@ jobs:
       - run: npm run build
         env:
           VITE_BASE_PATH: /bidlens-fashion/
+          VITE_MOBILE_IMPORT_API_URL: ${{ vars.VITE_MOBILE_IMPORT_API_URL }}
           VITE_CAPTURE_ENABLED: "false"
           VITE_CAPTURE_API_URL: ""
       - uses: actions/configure-pages@v5

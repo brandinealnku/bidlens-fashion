@@ -36,6 +36,7 @@ jobs:
         env:
           VITE_APPS_SCRIPT_API_URL: ${{ vars.VITE_APPS_SCRIPT_API_URL }}
           VITE_BASE_PATH: /bidlens-fashion/
+          VITE_MOBILE_IMPORT_API_URL: ${{ vars.VITE_MOBILE_IMPORT_API_URL }}
         run: npm run build
 
       - name: Verify build
