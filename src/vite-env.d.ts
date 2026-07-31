@@ -8,3 +8,5 @@ declare module '../ebay-provider.mjs' {
   export function serverQueries(product:any):string[];
   export function resetTokenCache():void;
 }
+declare module '../server.mjs';
+declare module '../mobile-import.mjs';

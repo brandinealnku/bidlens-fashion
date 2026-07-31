@@ -5,6 +5,8 @@ import net from 'node:net';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { searchEbayComparables, EbayProviderError } from './ebay-provider.mjs';
+import { installMobileImportRoutes } from './mobile-import.mjs';
+import { installMobileImportRoutes } from './mobile-import.mjs';
 import { GeminiVisualIdentificationProvider, GeminiGroundedComparableProvider, GoogleVisionWebDetectionProvider, ResearchProviderError } from './gemini-provider.mjs';
 
 export class CaptureError extends Error {
@@ -93,7 +95,7 @@ export async function capturePage(rawUrl, options={}) {
 }
 function controlledCors(req,res,next) { const origin=req.get('origin'),allowed=new Set((process.env.ALLOWED_ORIGINS||'http://localhost:5173,http://127.0.0.1:5173').split(',').map(x=>x.trim()).filter(Boolean));if(origin&&!allowed.has(origin))return next(new CaptureError('UNSUPPORTED_DOMAIN','This browser origin is not allowed by the capture API.',403,'Add the trusted frontend origin to ALLOWED_ORIGINS.'));if(origin){res.set('Access-Control-Allow-Origin',origin);res.set('Vary','Origin');res.set('Access-Control-Allow-Methods','GET,POST,OPTIONS');res.set('Access-Control-Allow-Headers','Content-Type');}if(req.method==='OPTIONS')return res.sendStatus(204);next(); }
 export function createApp(deps={}) {
-  const app=express(); app.disable('x-powered-by'); app.use(controlledCors); app.use(express.json({limit:'10mb'}));
+  const app=express(); app.disable('x-powered-by'); app.use(controlledCors); installMobileImportRoutes(app,{store:deps.mobileImportStore,env:deps.env||process.env}); app.use(express.json({limit:'10mb'}));
   // Browser readiness is capability metadata for the service-wide probe, but a
   // hard requirement for the capture-specific probe. Keep the dependency named
   // accordingly so research routes cannot accidentally acquire a browser gate.
