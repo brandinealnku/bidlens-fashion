@@ -6,7 +6,6 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { searchEbayComparables, EbayProviderError } from './ebay-provider.mjs';
 import { installMobileImportRoutes } from './mobile-import.mjs';
-import { installMobileImportRoutes } from './mobile-import.mjs';
 import { GeminiVisualIdentificationProvider, GeminiGroundedComparableProvider, GoogleVisionWebDetectionProvider, ResearchProviderError } from './gemini-provider.mjs';
 
 export class CaptureError extends Error {
